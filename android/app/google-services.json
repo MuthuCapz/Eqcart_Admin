@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "176587927793",
+    "project_id": "eqcart",
+    "storage_bucket": "eqcart.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:176587927793:android:81251bcd3b2725f4dcf950",
+        "android_client_info": {
+          "package_name": "com.capztone.eqcart"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "176587927793-aknmr8f0npsg8tfsk14fa6bmdvuin5pq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJjunasrfzKKc0EPNp-Gs2z_eE-kpNWB0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "176587927793-aknmr8f0npsg8tfsk14fa6bmdvuin5pq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "176587927793-1lihfujdbh1sffie17dadpotia49cfma.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.capztone.eqcartAdmin"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:176587927793:android:35eb0bcc8e48d510dcf950",
+        "android_client_info": {
+          "package_name": "com.capztone.eqcart_admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "176587927793-kc2hglpuesvu6nsdhikermm4ojn0s6sp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.capztone.eqcart_admin",
+            "certificate_hash": "a4415f27aca160c0d0a45716ed9e4298efd97028"
+          }
+        },
+        {
+          "client_id": "176587927793-aknmr8f0npsg8tfsk14fa6bmdvuin5pq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJjunasrfzKKc0EPNp-Gs2z_eE-kpNWB0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "176587927793-aknmr8f0npsg8tfsk14fa6bmdvuin5pq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "176587927793-1lihfujdbh1sffie17dadpotia49cfma.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.capztone.eqcartAdmin"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
