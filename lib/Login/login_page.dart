@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../utils/colors.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
 
 import '../Home/home_page.dart';
 import '../encryption_helper.dart';
@@ -98,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
               EncryptionHelper.decryptData(encryptedPassword);
 
           if (enteredPassword == decryptedPassword) {
-            // ✅ Authenticate user with Firebase Auth
+            // Authenticate user with Firebase Auth
             UserCredential userCredential =
                 await _auth.signInWithEmailAndPassword(
               email: enteredEmail,
