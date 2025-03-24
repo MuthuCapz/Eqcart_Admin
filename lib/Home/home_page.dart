@@ -53,7 +53,7 @@ class HomePage extends StatelessWidget {
             _buildBox(context, Icons.category, "Category",
                 AddCategoryPage()), // Pass instance
             _buildBox(context, Icons.shopping_cart, "Product",
-                ProductPage()), // Pass instance
+                AddProductPage()), // Pass instance
           ],
         ),
       ),
