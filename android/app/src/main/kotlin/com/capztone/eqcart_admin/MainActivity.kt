@@ -1,4 +1,4 @@
-package com.capztone.eqcart_admin
+package com.astracapz.eqcart_admin
 
 import io.flutter.embedding.android.FlutterActivity
 

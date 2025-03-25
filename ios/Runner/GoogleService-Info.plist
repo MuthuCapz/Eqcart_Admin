@@ -3,23 +3,23 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>176587927793-1lihfujdbh1sffie17dadpotia49cfma.apps.googleusercontent.com</string>
+	<string>167772038967-t82gvu969gqcb0t7c83cvmfk52dnl6p2.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.176587927793-1lihfujdbh1sffie17dadpotia49cfma</string>
+	<string>com.googleusercontent.apps.167772038967-t82gvu969gqcb0t7c83cvmfk52dnl6p2</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>176587927793-f1ua23e0r1s9cqtvvotk3kfh6ir5ol06.apps.googleusercontent.com</string>
+	<string>167772038967-112gta7npem6p4ln45cmin3bfd88oucu.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyCYDz43H7sI8E09Ite8n1ffQebXeIezEps</string>
+	<string>AIzaSyAuF3NgoLRYVUWHYGsA8HRCTNTJbLNeigk</string>
 	<key>GCM_SENDER_ID</key>
-	<string>176587927793</string>
+	<string>167772038967</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.capztone.eqcartAdmin</string>
 	<key>PROJECT_ID</key>
-	<string>eqcart</string>
+	<string>eqcart-9329f</string>
 	<key>STORAGE_BUCKET</key>
-	<string>eqcart.firebasestorage.app</string>
+	<string>eqcart-9329f.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:176587927793:ios:b868fa2749e4b20cdcf950</string>
+	<string>1:167772038967:ios:e7b07f4de77b80b44a5cb2</string>
 </dict>
 </plist>

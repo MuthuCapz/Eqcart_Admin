@@ -1,40 +1,48 @@
 {
   "project_info": {
-    "project_number": "176587927793",
-    "project_id": "eqcart",
-    "storage_bucket": "eqcart.firebasestorage.app"
+    "project_number": "167772038967",
+    "project_id": "eqcart-9329f",
+    "storage_bucket": "eqcart-9329f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:176587927793:android:81251bcd3b2725f4dcf950",
+        "mobilesdk_app_id": "1:167772038967:android:de06570eb43cbc574a5cb2",
         "android_client_info": {
-          "package_name": "com.capztone.eqcart"
+          "package_name": "com.astracape.eqcart_admin_app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "176587927793-aknmr8f0npsg8tfsk14fa6bmdvuin5pq.apps.googleusercontent.com",
+          "client_id": "167772038967-112gta7npem6p4ln45cmin3bfd88oucu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.astracape.eqcart_admin_app",
+            "certificate_hash": "a4415f27aca160c0d0a45716ed9e4298efd97028"
+          }
+        },
+        {
+          "client_id": "167772038967-ku20fng2o0hii9gevh4rp9j7rjer49ei.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDJjunasrfzKKc0EPNp-Gs2z_eE-kpNWB0"
+          "current_key": "AIzaSyC_w46-DxNG65iTRWSDWDCpjN5-rDPRXco"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "176587927793-aknmr8f0npsg8tfsk14fa6bmdvuin5pq.apps.googleusercontent.com",
+              "client_id": "167772038967-ku20fng2o0hii9gevh4rp9j7rjer49ei.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "176587927793-1lihfujdbh1sffie17dadpotia49cfma.apps.googleusercontent.com",
+              "client_id": "167772038967-bt2tlh3rd5jvr72rfrr36v3863cunm5p.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.capztone.eqcartAdmin"
+                "bundle_id": "com.astracape.eqcartAdminApp"
               }
             }
           ]
@@ -43,42 +51,42 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:176587927793:android:35eb0bcc8e48d510dcf950",
+        "mobilesdk_app_id": "1:167772038967:android:2dadf33d9c3cb59e4a5cb2",
         "android_client_info": {
-          "package_name": "com.capztone.eqcart_admin"
+          "package_name": "com.astracapz.eqcart_admin"
         }
       },
       "oauth_client": [
         {
-          "client_id": "176587927793-kc2hglpuesvu6nsdhikermm4ojn0s6sp.apps.googleusercontent.com",
+          "client_id": "167772038967-dp33ho09cu5q58avc28s30iajfri7p0b.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.capztone.eqcart_admin",
+            "package_name": "com.astracapz.eqcart_admin",
             "certificate_hash": "a4415f27aca160c0d0a45716ed9e4298efd97028"
           }
         },
         {
-          "client_id": "176587927793-aknmr8f0npsg8tfsk14fa6bmdvuin5pq.apps.googleusercontent.com",
+          "client_id": "167772038967-ku20fng2o0hii9gevh4rp9j7rjer49ei.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDJjunasrfzKKc0EPNp-Gs2z_eE-kpNWB0"
+          "current_key": "AIzaSyC_w46-DxNG65iTRWSDWDCpjN5-rDPRXco"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "176587927793-aknmr8f0npsg8tfsk14fa6bmdvuin5pq.apps.googleusercontent.com",
+              "client_id": "167772038967-ku20fng2o0hii9gevh4rp9j7rjer49ei.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "176587927793-1lihfujdbh1sffie17dadpotia49cfma.apps.googleusercontent.com",
+              "client_id": "167772038967-bt2tlh3rd5jvr72rfrr36v3863cunm5p.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.capztone.eqcartAdmin"
+                "bundle_id": "com.astracape.eqcartAdminApp"
               }
             }
           ]

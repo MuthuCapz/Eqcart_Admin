@@ -3,6 +3,8 @@ import '../../../utils/colors.dart';
 import '../Profile/profile_page.dart';
 import '../Category/category_page.dart';
 import '../Product/product_page.dart';
+import '../Shops/add_new_shop/add_shop_page.dart';
+import '../Shops/view_shop/view_shop_page.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -47,13 +49,27 @@ class HomePage extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(25.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            _buildBox(context, Icons.category, "Category",
-                AddCategoryPage()), // Pass instance
-            _buildBox(context, Icons.shopping_cart, "Product",
-                AddProductPage()), // Pass instance
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildBox(context, Icons.store, "Add New Shop", AddShopPage()),
+                _buildBox(
+                    context, Icons.visibility, "View Shop", ViewShopPage()),
+              ],
+            ),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildBox(
+                    context, Icons.category, "Category", AddCategoryPage()),
+                _buildBox(
+                    context, Icons.shopping_cart, "Product", AddProductPage()),
+              ],
+            ),
           ],
         ),
       ),
