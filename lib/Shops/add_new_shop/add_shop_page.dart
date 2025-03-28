@@ -1,8 +1,11 @@
 import 'dart:io';
 
+import 'package:eqcart_admin/Shops/add_new_shop/validators.dart';
 import 'package:flutter/material.dart';
 import '../../utils/colors.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddShopPage extends StatefulWidget {
   @override
@@ -10,6 +13,7 @@ class AddShopPage extends StatefulWidget {
 }
 
 class _AddShopPageState extends State<AddShopPage> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _shopNameController = TextEditingController();
   final TextEditingController _shopEmailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -18,12 +22,10 @@ class _AddShopPageState extends State<AddShopPage> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _ownerNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-
-  List<Map<String, TextEditingController>> extraContacts = [];
-
+  bool _passwordVisible = false;
   XFile? _logoImage;
   final ImagePicker _picker = ImagePicker();
-
+  List<Map<String, TextEditingController>> extraContacts = [];
   void _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     setState(() {
@@ -47,6 +49,53 @@ class _AddShopPageState extends State<AddShopPage> {
     });
   }
 
+  void _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      String shopId = FirebaseFirestore.instance.collection('shops').doc().id;
+      DateTime now = DateTime.now();
+      String formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
+
+      // Filter only filled extra contacts
+      List<Map<String, String>> filteredContacts = extraContacts
+          .where((contact) =>
+              contact['contactName']!.text.isNotEmpty ||
+              contact['phone']!.text.isNotEmpty ||
+              contact['email']!.text.isNotEmpty)
+          .map((contact) => {
+                'contact_person_name': contact['contactName']!.text,
+                'contact_person_phone': contact['phone']!.text,
+                'contact_person_email': contact['email']!.text,
+              })
+          .toList();
+
+      Map<String, dynamic> shopData = {
+        'shop_name': _shopNameController.text,
+        'shop_email': _shopEmailController.text,
+        'password': _passwordController.text,
+        'description': _descriptionController.text,
+        'type': _typeController.text,
+        'owner_name': _ownerNameController.text,
+        'owner_phone': _phoneController.text,
+        'createDateTime': formattedDate,
+        'updateDateTime': formattedDate,
+      };
+
+      // Only add 'additional_contacts' if there are valid entries
+      if (filteredContacts.isNotEmpty) {
+        shopData['additional_contacts'] = filteredContacts;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('shops')
+          .doc(shopId)
+          .set(shopData);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Shop added successfully!')),
+      );
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,65 +108,113 @@ class _AddShopPageState extends State<AddShopPage> {
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTextField('Shop Name', _shopNameController),
-              _buildTextField('Shop Email', _shopEmailController),
-              _buildTextField('Password', _passwordController,
-                  obscureText: true),
-              _buildTextField('Description', _descriptionController,
-                  maxLines: 3),
-              _buildTextField('Type', _typeController),
-              _buildImagePicker(),
-              _buildTextField('Location', _locationController),
-              _buildTextField('Owner Name', _ownerNameController),
-              _buildTextField('Phone', _phoneController),
-              SizedBox(height: 10),
-              Text('Additional Contacts',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ...extraContacts
-                  .asMap()
-                  .entries
-                  .map((entry) =>
-                      _buildExtraContactFields(entry.key, entry.value))
-                  .toList(),
-              Row(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.add_circle,
-                        color: AppColors.secondaryColor, size: 30),
-                    onPressed: _addExtraContact,
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondaryColor,
-                    side: BorderSide(
-                        color: AppColors.primaryColor,
-                        width: 1), // Outline color
-                  ),
-                  child: Text('Submit', style: TextStyle(color: Colors.white)),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTextField('Shop Name', _shopNameController,
+                    validator: Validators.validateShopName),
+                _buildTextField('Shop Email', _shopEmailController,
+                    validator: Validators.validateEmail),
+                _buildPasswordField(),
+                _buildTextField('Description', _descriptionController,
+                    validator: Validators.validateDescription, maxLines: 3),
+                _buildTextField('Type', _typeController,
+                    validator: Validators.validateType),
+                _buildImagePicker(),
+                _buildTextField('Location', _locationController),
+                _buildTextField('Owner Name', _ownerNameController,
+                    validator: Validators.validateShopName),
+                _buildTextField('Phone', _phoneController,
+                    validator: Validators.validatePhone),
+                SizedBox(height: 10),
+                Text('Additional Contacts',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ...extraContacts
+                    .asMap()
+                    .entries
+                    .map((entry) =>
+                        _buildExtraContactFields(entry.key, entry.value))
+                    .toList(),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.add_circle,
+                          color: AppColors.secondaryColor, size: 30),
+                      onPressed: _addExtraContact,
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                SizedBox(height: 20),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: _submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondaryColor,
+                      side: BorderSide(
+                          color: AppColors.primaryColor,
+                          width: 1), // Outline color
+                    ),
+                    child:
+                        Text('Submit', style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  Widget _buildPasswordField() {
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: !_passwordVisible,
+      decoration: InputDecoration(
+        labelText: 'Password',
+        labelStyle: TextStyle(color: AppColors.secondaryColor), // Label color
+        border: OutlineInputBorder(
+          // Full box style
+          borderRadius: BorderRadius.circular(8), // Rounded corners
+          borderSide: BorderSide(color: AppColors.secondaryColor, width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          // Highlight border on focus
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.secondaryColor, width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          // Default border
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppColors.primaryColor, width: 1),
+        ),
+        filled: true, // Background fill
+        fillColor: Colors.white,
+        suffixIcon: IconButton(
+          icon: Icon(
+            _passwordVisible ? Icons.visibility : Icons.visibility_off,
+            color: AppColors.secondaryColor,
+          ),
+          onPressed: () {
+            setState(() {
+              _passwordVisible = !_passwordVisible;
+            });
+          },
+        ),
+      ),
+      validator: Validators.validatePassword,
+    );
+  }
+
   Widget _buildTextField(String label, TextEditingController controller,
-      {bool obscureText = false, int maxLines = 1}) {
+      {int maxLines = 1, String? Function(String?)? validator}) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 8.0),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
-        obscureText: obscureText,
         maxLines: maxLines,
         decoration: InputDecoration(
           labelText: label,
@@ -126,7 +223,10 @@ class _AddShopPageState extends State<AddShopPage> {
           focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(color: AppColors.secondaryColor, width: 2.0),
           ),
+          fillColor: Colors.white,
+          filled: true,
         ),
+        validator: validator, // Now validator is supported
       ),
     );
   }
@@ -138,7 +238,7 @@ class _AddShopPageState extends State<AddShopPage> {
         height: 150,
         width: 230,
         decoration: BoxDecoration(
-          color: AppColors.backgroundColor,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: AppColors.secondaryColor),
         ),
@@ -168,17 +268,51 @@ class _AddShopPageState extends State<AddShopPage> {
       int index, Map<String, TextEditingController> contact) {
     return Column(
       children: [
-        _buildTextField('Contact Person Name', contact['contactName']!),
-        _buildTextField('Phone', contact['phone']!),
-        _buildTextField('Email', contact['email']!),
+        _buildTextField(
+          'Contact Person Name',
+          contact['contactName']!,
+          validator: (value) {
+            // Validate only if any of the fields are filled
+            if (value!.isNotEmpty ||
+                contact['phone']!.text.isNotEmpty ||
+                contact['email']!.text.isNotEmpty) {
+              return Validators.validateShopName(value);
+            }
+            return null; // No validation if all fields are empty
+          },
+        ),
+        _buildTextField(
+          'Phone',
+          contact['phone']!,
+          validator: (value) {
+            if (value!.isNotEmpty ||
+                contact['contactName']!.text.isNotEmpty ||
+                contact['email']!.text.isNotEmpty) {
+              return Validators.validatePhone(value);
+            }
+            return null;
+          },
+        ),
+        _buildTextField(
+          'Email',
+          contact['email']!,
+          validator: (value) {
+            if (value!.isNotEmpty ||
+                contact['contactName']!.text.isNotEmpty ||
+                contact['phone']!.text.isNotEmpty) {
+              return Validators.validateEmail(value);
+            }
+            return null;
+          },
+        ),
         Row(
-          mainAxisSize: MainAxisSize.min, // Ensures minimal space usage
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               "If you want to remove this contact, please click",
               style: TextStyle(color: Colors.black54, fontSize: 14),
             ),
-            SizedBox(width: 1), // Small gap between text and icon
+            SizedBox(width: 1),
             IconButton(
               icon: Icon(Icons.remove_circle, color: Colors.red, size: 30),
               onPressed: () => _removeExtraContact(index),
