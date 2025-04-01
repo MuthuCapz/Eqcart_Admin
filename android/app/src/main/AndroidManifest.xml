@@ -48,6 +48,12 @@
         <meta-data
             android:name="com.google.android.gms.maps.v2.enable_hybrid_composition"
             android:value="true"/>
+        <meta-data
+            android:name="com.google.android.gms.common.logging.LOGGER_LEVEL"
+            android:value="WARN" />
+        <meta-data
+            android:name="com.google.android.maps.API_KEY"
+            android:value="AIzaSyCsch2Dos82VGx3jvHDseoOpVj0gbktOqQ"/>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
