@@ -34,6 +34,12 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+        <string>We need your location to show on the map.</string>
+
+        <key>GMSApiKey</key>
+        <string>AIzaSyAjqd4z5SD4hys2lfNQfZnbTVH8TTqUE3c</string>
+
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

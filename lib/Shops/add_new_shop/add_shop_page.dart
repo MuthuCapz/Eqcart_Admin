@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'MapSelectionPage.dart';
+
 class AddShopPage extends StatefulWidget {
   @override
   _AddShopPageState createState() => _AddShopPageState();
@@ -31,6 +33,19 @@ class _AddShopPageState extends State<AddShopPage> {
     setState(() {
       _logoImage = pickedFile;
     });
+  }
+
+  void _selectLocation() async {
+    final selectedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MapSelectionPage()),
+    );
+
+    if (selectedLocation != null) {
+      setState(() {
+        _locationController.text = selectedLocation;
+      });
+    }
   }
 
   void _addExtraContact() {
@@ -74,6 +89,7 @@ class _AddShopPageState extends State<AddShopPage> {
         'password': _passwordController.text,
         'description': _descriptionController.text,
         'type': _typeController.text,
+        'location': _locationController.text,
         'owner_name': _ownerNameController.text,
         'owner_phone': _phoneController.text,
         'createDateTime': formattedDate,
@@ -123,7 +139,8 @@ class _AddShopPageState extends State<AddShopPage> {
                 _buildTextField('Type', _typeController,
                     validator: Validators.validateType),
                 _buildImagePicker(),
-                _buildTextField('Location', _locationController),
+                _buildTextField1('Location', _locationController,
+                    readOnly: true, onTap: _selectLocation),
                 _buildTextField('Owner Name', _ownerNameController,
                     validator: Validators.validateShopName),
                 _buildTextField('Phone', _phoneController,
@@ -227,6 +244,27 @@ class _AddShopPageState extends State<AddShopPage> {
           filled: true,
         ),
         validator: validator, // Now validator is supported
+      ),
+    );
+  }
+
+  Widget _buildTextField1(String label, TextEditingController controller,
+      {bool readOnly = false, VoidCallback? onTap}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        controller: controller,
+        readOnly: readOnly,
+        onTap: onTap,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(),
+          filled: true,
+          fillColor: Colors.white,
+          suffixIcon: onTap != null
+              ? Icon(Icons.location_on, color: AppColors.secondaryColor)
+              : null,
+        ),
       ),
     );
   }
