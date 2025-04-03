@@ -256,14 +256,25 @@ class _AddShopPageState extends State<AddShopPage> {
         controller: controller,
         readOnly: readOnly,
         onTap: onTap,
+        maxLines: null,
+        keyboardType: TextInputType.multiline,
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: TextStyle(
+            color: AppColors.secondaryColor,
+          ),
           border: OutlineInputBorder(),
           filled: true,
           fillColor: Colors.white,
           suffixIcon: onTap != null
               ? Icon(Icons.location_on, color: AppColors.secondaryColor)
               : null,
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(
+              color: AppColors.secondaryColor,
+              width: 2.0,
+            ),
+          ),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -21,6 +22,7 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
   bool _isSearching = false;
   Set<Marker> _markers = {};
   Timer? _debounce;
+  String _selectedAddress = ''; // To store the selected address
 
   @override
   void initState() {
@@ -59,7 +61,7 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
       _selectedLocation = LatLng(position.latitude, position.longitude);
       _isLoading = false;
     });
-
+    await _getAddressFromLatLng(position.latitude, position.longitude);
     _updateMarker(_selectedLocation);
     _moveCamera(_selectedLocation);
   }
@@ -86,10 +88,7 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
     }
   }
 
-  void _confirmSelection() {
-    Navigator.pop(context,
-        "${_selectedLocation.latitude}, ${_selectedLocation.longitude}");
-  }
+  final apiKey = "AIzaSyCsch2Dos82VGx3jvHDseoOpVj0gbktOqQ";
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
@@ -107,7 +106,7 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
     }
 
     final url = Uri.parse(
-        "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query");
+        "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=$apiKey");
 
     try {
       final response = await http.get(url);
@@ -122,10 +121,6 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
             _searchResults = predictions;
             _isSearching = true;
           });
-
-          if (predictions.isNotEmpty) {
-            _selectLocation(predictions[0]['place_id']);
-          }
         } else {
           print("Google API Error: ${data['status']}");
           ScaffoldMessenger.of(context)
@@ -145,7 +140,7 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
 
   Future<void> _selectLocation(String placeId) async {
     final url = Uri.parse(
-        "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId");
+        "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$apiKey");
 
     try {
       final response = await http.get(url);
@@ -161,9 +156,11 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
 
           setState(() {
             _selectedLocation = newLocation;
+            _selectedAddress =
+                result['formatted_address'] ?? "Address not available";
             _searchResults.clear();
             _isSearching = false;
-            _searchController.text = result['formatted_address'] ?? "";
+            _searchController.text = _selectedAddress;
           });
 
           _updateMarker(newLocation);
@@ -179,6 +176,15 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
     }
   }
 
+  void _confirmSelection() {
+    // If no address has been selected by search, use the current location address
+    Navigator.pop(
+        context,
+        _selectedAddress.isNotEmpty
+            ? _selectedAddress
+            : "Address not available");
+  }
+
   void _updateMarker(LatLng position) {
     setState(() {
       _markers = {
@@ -188,6 +194,40 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
         ),
       };
     });
+  }
+
+// Method to fetch address from lat, long
+  Future<void> _getAddressFromLatLng(double lat, double lng) async {
+    final url = Uri.parse(
+        "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey");
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'OK') {
+          final result = data['results'][0];
+          setState(() {
+            _selectedAddress =
+                result['formatted_address'] ?? "Unknown location";
+          });
+        } else {
+          print("Google API Error: ${data['status']}");
+          setState(() {
+            _selectedAddress = "Unable to fetch address";
+          });
+        }
+      } else {
+        print("HTTP Error: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Exception: $e");
+      setState(() {
+        _selectedAddress = "Network error!";
+      });
+    }
   }
 
   void _showSnackBar(String message) {
@@ -221,6 +261,8 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
                     });
                     _updateMarker(tappedPoint);
                     _moveCamera(tappedPoint);
+                    _getAddressFromLatLng(
+                        tappedPoint.latitude, tappedPoint.longitude);
                   },
                 ),
 
@@ -240,6 +282,21 @@ class _MapSelectionPageState extends State<MapSelectionPage> {
                       hintText: "Search location",
                       prefixIcon:
                           Icon(Icons.search, color: AppColors.secondaryColor),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.cancel,
+                                  color: AppColors.secondaryColor),
+                              onPressed: () {
+                                _searchController
+                                    .clear(); // Clear the text field
+                                setState(() {
+                                  _searchResults
+                                      .clear(); // Clear search results
+                                  _isSearching = false; // Stop searching
+                                });
+                              },
+                            )
+                          : null,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none,

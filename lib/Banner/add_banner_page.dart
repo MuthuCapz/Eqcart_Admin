@@ -1,8 +1,10 @@
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 import '../../utils/colors.dart';
+import '../Home/home_page.dart';
 
 class AddBannerPage extends StatefulWidget {
   @override
@@ -30,10 +32,41 @@ class _AddBannerPageState extends State<AddBannerPage> {
     });
   }
 
-  void _saveImages() {
-    if (_selectedImages.isNotEmpty) {
+  Future<void> _saveImages() async {
+    if (_selectedImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("No images selected")),
+      );
+      return;
+    }
+    setState(() {
+      _isSaved = true; // Indicates the upload is in progress
+    });
+    try {
+      for (File image in _selectedImages) {
+        String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+        Reference storageRef =
+            FirebaseStorage.instance.ref().child('banners/$fileName.jpg');
+        await storageRef.putFile(image); // Upload file
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Images uploaded successfully!")),
+      );
       setState(() {
-        _isSaved = true;
+        _selectedImages.clear(); // Clear images after successful upload
+      });
+      // Navigate to HomePage after a short delay
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error uploading images: $e")),
+      );
+    } finally {
+      setState(() {
+        _isSaved = false; // Reset saving state
       });
     }
   }
