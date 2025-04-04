@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../utils/colors.dart';
 
 class AddProductPage extends StatefulWidget {
@@ -12,6 +13,9 @@ class AddProductPage extends StatefulWidget {
 
 class _AddProductPageState extends State<AddProductPage> {
   final _formKey = GlobalKey<FormState>();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
   TextEditingController nameController = TextEditingController();
   TextEditingController priceController = TextEditingController();
   TextEditingController weightController = TextEditingController();
@@ -52,6 +56,66 @@ class _AddProductPageState extends State<AddProductPage> {
         _image = File(pickedFile.path);
       });
     }
+  }
+
+  Future<void> _submitProduct() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      String skuId = skuController.text;
+      String? uploadedImageUrl;
+
+      if (_image != null) {
+        uploadedImageUrl = await _uploadImage(skuId);
+      }
+
+      Map<String, dynamic> productData = {
+        'product_name': nameController.text.trim(),
+        'sku_id': skuId,
+        'product_price': double.parse(priceController.text),
+        'product_weight': double.parse(weightController.text),
+        'category': selectedCategory,
+        'description': descriptionController.text.trim(),
+        'status': selectedStatus,
+        'discount': double.parse(discountController.text),
+        'image_url': uploadedImageUrl ?? '',
+        'createDateTime': FieldValue.serverTimestamp(),
+        'updateDateTime': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore.collection('products').doc(skuId).set(productData);
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Product added successfully')));
+      _resetForm();
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<String> _uploadImage(String skuId) async {
+    try {
+      Reference storageRef = _storage.ref().child('product_images/$skuId.jpg');
+      UploadTask uploadTask = storageRef.putFile(_image!);
+      TaskSnapshot snapshot = await uploadTask;
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      throw 'Image upload failed';
+    }
+  }
+
+  void _resetForm() {
+    nameController.clear();
+    priceController.clear();
+    weightController.clear();
+    descriptionController.clear();
+    discountController.clear();
+    selectedCategory = null;
+    selectedStatus = null;
+    _image = null;
+    _generateSKU();
+    setState(() {});
   }
 
   @override
@@ -184,7 +248,7 @@ class _AddProductPageState extends State<AddProductPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: _submitProduct,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.secondaryColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

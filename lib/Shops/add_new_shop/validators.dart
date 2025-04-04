@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class Validators {
   static String? validateShopName(String? value) {
     if (value == null || value.isEmpty) {

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:eqcart_admin/Shops/add_new_shop/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../utils/colors.dart';
@@ -8,14 +7,16 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'MapSelectionPage.dart';
 
-class AddShopPage extends StatefulWidget {
+import '../add_new_shop/MapSelectionPage.dart';
+import '../add_new_shop/validators.dart';
+
+class AddOwnShopPage extends StatefulWidget {
   @override
-  _AddShopPageState createState() => _AddShopPageState();
+  _AddOwnShopPageState createState() => _AddOwnShopPageState();
 }
 
-class _AddShopPageState extends State<AddShopPage> {
+class _AddOwnShopPageState extends State<AddOwnShopPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _shopNameController = TextEditingController();
   final TextEditingController _shopEmailController = TextEditingController();
@@ -68,13 +69,15 @@ class _AddShopPageState extends State<AddShopPage> {
 
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      String shopId = FirebaseFirestore.instance.collection('shops').doc().id;
+      String shopId =
+          FirebaseFirestore.instance.collection('own_shops').doc().id;
       DateTime now = DateTime.now();
       String formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
       String? imageUrl;
       double? latitude;
       double? longitude;
       String? city;
+
       // Get latitude & longitude from address
       try {
         List<Location> locations =
@@ -97,8 +100,9 @@ class _AddShopPageState extends State<AddShopPage> {
       // Upload Image to Firebase Storage
       if (_logoImage != null) {
         try {
-          Reference storageRef =
-              FirebaseStorage.instance.ref().child('shop_logos/$shopId.png');
+          Reference storageRef = FirebaseStorage.instance
+              .ref()
+              .child('own_shop_logos/$shopId.png');
           await storageRef.putFile(File(_logoImage!.path));
           imageUrl = await storageRef.getDownloadURL();
         } catch (e) {
@@ -148,7 +152,7 @@ class _AddShopPageState extends State<AddShopPage> {
       }
 
       await FirebaseFirestore.instance
-          .collection('shops')
+          .collection('own_shops')
           .doc(shopId)
           .set(shopData);
       ScaffoldMessenger.of(context).showSnackBar(

@@ -5,6 +5,8 @@ import '../Profile/profile_page.dart';
 import '../Category/category_page.dart';
 import '../Product/product_page.dart';
 import '../Shops/add_new_shop/add_shop_page.dart';
+import '../Shops/add_own_shop/add_own_shop_page.dart';
+import '../Shops/view_own_shop/view_own_shop_page.dart';
 import '../Shops/view_shop/view_shop_page.dart';
 
 class HomePage extends StatelessWidget {
@@ -53,6 +55,16 @@ class HomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildBox(
+                    context, Icons.store, "Add Own Shop", AddOwnShopPage()),
+                _buildBox(context, Icons.visibility, "View Own Shop",
+                    ViewOwnShopPage()),
+              ],
+            ),
+            SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
