@@ -7,6 +7,9 @@ import '../../utils/colors.dart';
 import '../Home/home_page.dart';
 
 class AddBannerPage extends StatefulWidget {
+  final String shopId;
+
+  AddBannerPage({required this.shopId});
   @override
   _AddBannerPageState createState() => _AddBannerPageState();
 }

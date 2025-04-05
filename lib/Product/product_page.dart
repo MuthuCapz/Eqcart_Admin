@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import '../utils/colors.dart';
 
 class AddProductPage extends StatefulWidget {
+  final String shopId;
+  AddProductPage({required this.shopId});
   @override
   _AddProductPageState createState() => _AddProductPageState();
 }
@@ -28,24 +30,69 @@ class _AddProductPageState extends State<AddProductPage> {
   File? _image;
   String? imageUrl;
 
-  List<String> categories = [
-    'Electronics',
-    'Clothing',
-    'Food',
-    'Books',
-    'Others'
-  ];
-  List<String> statusOptions = ['Active', 'Inactive'];
+  List<String> categories = [];
+  List<String> statusOptions = ['Instock', 'Outstock'];
 
   @override
   void initState() {
     super.initState();
     _generateSKU();
+    _fetchCategories();
   }
 
   void _generateSKU() {
     int randomNum = Random().nextInt(900000) + 100000;
     skuController.text = 'SKU-$randomNum';
+  }
+
+  Future<void> _fetchCategories() async {
+    List<String> fetchedCategories = [];
+
+    try {
+      // if shop exists in `shops_categories`
+      DocumentSnapshot shopCategoriesDoc = await _firestore
+          .collection('shops_categories')
+          .doc(widget.shopId)
+          .get();
+
+      if (shopCategoriesDoc.exists) {
+        var data = shopCategoriesDoc.data() as Map<String, dynamic>;
+        if (data.containsKey('categories') && data['categories'] is List) {
+          fetchedCategories = (data['categories'] as List)
+              .where((category) =>
+                  category is Map<String, dynamic> &&
+                  category.containsKey('category_name'))
+              .map((category) => category['category_name'].toString())
+              .toList();
+        }
+      }
+
+      // If no categories found in `shops_categories`, check `own_shops_categories`
+      if (fetchedCategories.isEmpty) {
+        DocumentSnapshot ownShopCategoriesDoc = await _firestore
+            .collection('own_shops_categories')
+            .doc(widget.shopId)
+            .get();
+
+        if (ownShopCategoriesDoc.exists) {
+          var data = ownShopCategoriesDoc.data() as Map<String, dynamic>;
+          if (data.containsKey('categories') && data['categories'] is List) {
+            fetchedCategories = (data['categories'] as List)
+                .where((category) =>
+                    category is Map<String, dynamic> &&
+                    category.containsKey('category_name'))
+                .map((category) => category['category_name'].toString())
+                .toList();
+          }
+        }
+      }
+
+      setState(() {
+        categories = fetchedCategories;
+      });
+    } catch (e) {
+      print("Error fetching categories: $e");
+    }
   }
 
   Future<void> _pickImage() async {
@@ -59,6 +106,13 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   Future<void> _submitProduct() async {
+    if (categories.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Please select a category or add a category first'),
+      ));
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     try {
@@ -76,22 +130,59 @@ class _AddProductPageState extends State<AddProductPage> {
         'product_weight': double.parse(weightController.text),
         'category': selectedCategory,
         'description': descriptionController.text.trim(),
-        'status': selectedStatus,
         'discount': double.parse(discountController.text),
         'image_url': uploadedImageUrl ?? '',
+        'stock': selectedStatus,
         'createDateTime': FieldValue.serverTimestamp(),
         'updateDateTime': FieldValue.serverTimestamp(),
       };
 
-      await _firestore.collection('products').doc(skuId).set(productData);
+      // Check if shopId exists in 'shops'
+      DocumentSnapshot shopDoc =
+          await _firestore.collection('shops').doc(widget.shopId).get();
+      if (shopDoc.exists) {
+        await _storeProduct('shops_products', productData);
+        return;
+      }
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Product added successfully')));
-      _resetForm();
+      // Check if shopId exists in 'own_shops'
+      DocumentSnapshot ownShopDoc =
+          await _firestore.collection('own_shops').doc(widget.shopId).get();
+      if (ownShopDoc.exists) {
+        await _storeProduct('own_shops_products', productData);
+        return;
+      }
+
+      // If shopId is not found in either, show error
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error: Shop ID not found in shops or own_shops')));
     } catch (e) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error: $e')));
     }
+  }
+
+// Function to store product in the correct Firestore path
+  Future<void> _storeProduct(
+      String collection, Map<String, dynamic> productData) async {
+    String categoryId = selectedCategory ?? 'Others';
+
+    await _firestore
+        .collection(collection)
+        .doc(widget.shopId)
+        .set({}, SetOptions(merge: true)); // Ensure shopId exists
+
+    await _firestore
+        .collection(collection)
+        .doc(widget.shopId)
+        .collection(categoryId)
+        .doc(productData['sku_id'])
+        .set(productData);
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Product added successfully')));
+
+    _resetForm();
   }
 
   Future<String> _uploadImage(String skuId) async {

@@ -5,9 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uuid/uuid.dart';
 
+import '../Firebase_Service/firebase_service.dart';
 import '../utils/colors.dart';
 
 class AddCategoryPage extends StatefulWidget {
+  final String shopId;
+  AddCategoryPage({required this.shopId});
   @override
   _AddCategoryPageState createState() => _AddCategoryPageState();
 }
@@ -63,19 +66,50 @@ class _AddCategoryPageState extends State<AddCategoryPage> {
     });
 
     try {
+      // Upload image
       String imageUrl = await _uploadImage(_selectedImage!);
       String categoryId = Uuid().v4();
+      String? collectionPath;
+      Timestamp currentTime = Timestamp.now();
+      var firestore = FirebaseService.firestore;
 
-      await FirebaseFirestore.instance
-          .collection('categories')
-          .doc(categoryId)
-          .set({
-        'category_name': categoryNameController.text.trim(),
-        'description': headerDescriptionController.text.trim(),
-        'image_url': imageUrl,
-      });
+      var results = await Future.wait([
+        firestore.collection('own_shops').doc(widget.shopId).get(),
+        firestore.collection('shops').doc(widget.shopId).get(),
+      ]);
 
-      Navigator.pop(context); // Move to homepage
+      DocumentSnapshot ownShopDoc = results[0];
+      DocumentSnapshot shopDoc = results[1];
+
+      if (ownShopDoc.exists) {
+        collectionPath = "own_shops_categories";
+      } else if (shopDoc.exists) {
+        collectionPath = "shops_categories";
+      }
+
+      if (collectionPath != null) {
+        DocumentReference shopCategoryRef =
+            firestore.collection(collectionPath).doc(widget.shopId);
+
+        Map<String, dynamic> newCategory = {
+          'category_id': categoryId,
+          'category_name': categoryNameController.text.trim(),
+          'description': headerDescriptionController.text.trim(),
+          'image_url': imageUrl,
+          'createDateTime': currentTime,
+          'updateDateTime': currentTime,
+        };
+
+        await shopCategoryRef.set({
+          'categories': FieldValue.arrayUnion([newCategory])
+        }, SetOptions(merge: true));
+
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Invalid shop ID. Category not saved.")),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving category: ${e.toString()}")),

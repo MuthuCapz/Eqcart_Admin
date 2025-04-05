@@ -73,23 +73,6 @@ class HomePage extends StatelessWidget {
                     context, Icons.visibility, "View Shop", ViewShopPage()),
               ],
             ),
-            SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildBox(
-                    context, Icons.category, "Category", AddCategoryPage()),
-                _buildBox(
-                    context, Icons.shopping_cart, "Product", AddProductPage()),
-              ],
-            ),
-            SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildBox(context, Icons.post_add, "Banner", AddBannerPage()),
-              ],
-            ),
           ],
         ),
       ),

@@ -46,6 +46,10 @@
             android:name="flutterEmbedding"
             android:value="2" />
         <meta-data
+            android:name="com.google.firebase.appcheck.v1.AppCheckProvider"
+            android:value="play_integrity" />
+
+        <meta-data
             android:name="com.google.android.gms.maps.v2.enable_hybrid_composition"
             android:value="true"/>
         <meta-data
