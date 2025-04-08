@@ -31,6 +31,8 @@ class _AddProductPageState extends State<AddProductPage> {
   String? imageUrl;
 
   List<String> categories = [];
+  List<Map<String, dynamic>> variants = [];
+
   List<String> statusOptions = ['Instock', 'Outstock'];
 
   @override
@@ -128,6 +130,7 @@ class _AddProductPageState extends State<AddProductPage> {
         'sku_id': skuId,
         'product_price': double.parse(priceController.text),
         'product_weight': double.parse(weightController.text),
+        'variants': variants,
         'category': selectedCategory,
         'description': descriptionController.text.trim(),
         'discount': double.parse(discountController.text),
@@ -228,10 +231,8 @@ class _AddProductPageState extends State<AddProductPage> {
               children: [
                 _buildTextField('Product Name', nameController),
                 _buildReadOnlyField('SKU ID', skuController),
-                _buildTextField('Product Price', priceController,
-                    isNumber: true),
-                _buildTextField('Product Weight', weightController,
-                    isNumber: true),
+                _buildTextField('Product Price', priceController),
+                _buildTextField('Product Weight', weightController),
                 _buildDropdown('Category', categories, selectedCategory,
                     (value) => setState(() => selectedCategory = value)),
                 _buildTextField('Product Description', descriptionController,
@@ -239,6 +240,92 @@ class _AddProductPageState extends State<AddProductPage> {
                 _buildDropdown('Status', statusOptions, selectedStatus,
                     (value) => setState(() => selectedStatus = value)),
                 _buildTextField('Discount', discountController, isNumber: true),
+                SizedBox(height: 10),
+                Text("Product Variants",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                ...variants.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  Map<String, dynamic> variant = entry.value;
+
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _variantTextField(
+                                'Volume', (val) => variant['volume'] = val),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _variantTextField(
+                                'Price',
+                                (val) => variant['price'] =
+                                    double.tryParse(val) ?? 0),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _variantTextField(
+                                'MRP',
+                                (val) =>
+                                    variant['mrp'] = double.tryParse(val) ?? 0),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: variant['stock'],
+                              decoration: InputDecoration(
+                                labelText: 'Stock',
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8)),
+                              ),
+                              items: ['Instock', 'Outstock'].map((status) {
+                                return DropdownMenuItem(
+                                  value: status,
+                                  child: Text(status),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  variant['stock'] = value;
+                                });
+                              },
+                              validator: (value) =>
+                                  value == null ? 'Select stock status' : null,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red),
+                            onPressed: () =>
+                                setState(() => variants.removeAt(index)),
+                          ),
+                        ],
+                      ),
+                      Divider(),
+                    ],
+                  );
+                }).toList(),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    icon: Icon(Icons.add),
+                    label: Text('Add Variant'),
+                    onPressed: () {
+                      setState(() {
+                        variants.add({
+                          "volume": "",
+                          "price": 0.0,
+                          "mrp": 0.0,
+                          "stock": "Instock",
+                        });
+                      });
+                    },
+                  ),
+                ),
                 SizedBox(height: 10),
                 _imagePickerWidget(),
                 SizedBox(height: 20),
@@ -304,6 +391,21 @@ class _AddProductPageState extends State<AddProductPage> {
         }).toList(),
         onChanged: onChanged,
         validator: (value) => value == null ? 'Select a $label' : null,
+      ),
+    );
+  }
+
+  Widget _variantTextField(String hint, Function(String) onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: TextFormField(
+        decoration: InputDecoration(
+          hintText: hint,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        onChanged: onChanged,
       ),
     );
   }
