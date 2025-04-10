@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/colors.dart';
+
 class ProductTile extends StatelessWidget {
   final Map<String, dynamic> data;
   final bool showVariants;
@@ -16,13 +18,11 @@ class ProductTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final variants = data['variants'] ?? [];
     final theme = Theme.of(context);
-    final green = Color(0xFF4E9F3D);
-    final lightBg = Color(0xFFF5FFF2);
 
     return Card(
       elevation: 5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: lightBg,
+      color: AppColors.backgroundColor,
       margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -34,7 +34,7 @@ class ProductTile extends StatelessWidget {
               "Category: ${data['category_name']}",
               style: TextStyle(
                 fontSize: 14,
-                color: green,
+                color: AppColors.secondaryColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -98,7 +98,7 @@ class ProductTile extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text('Stock: ${data['stock']}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: green,
+                          color: AppColors.secondaryColor,
                           fontWeight: FontWeight.w500,
                         )),
                     const SizedBox(height: 6),

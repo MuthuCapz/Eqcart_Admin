@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../utils/colors.dart';
-import 'category_product_list.dart'; // contains ProductCard
+import 'category_product_list.dart';
 
 class CategoryProductsPage extends StatefulWidget {
   final String shopId;
@@ -54,9 +54,14 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        title: Text(widget.categoryName),
+        title: Text(
+          widget.categoryName,
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: AppColors.secondaryColor,
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: validCollection == null
           ? Center(child: Text("No products found in ${widget.categoryName}"))
@@ -84,7 +89,12 @@ class _CategoryProductsPageState extends State<CategoryProductsPage> {
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     final data = docs[index].data() as Map<String, dynamic>;
-                    return ProductCard(product: data);
+                    data['shop_id'] = widget.shopId;
+                    data['category'] = widget.categoryName;
+                    return ProductCard(
+                      product: data,
+                      validCollection: validCollection!, // pass the collection
+                    );
                   },
                 );
               },
