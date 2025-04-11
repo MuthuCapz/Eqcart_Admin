@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eqcart_admin/Product/product_listview_ui.dart';
+import 'package:eqcart_admin/Product/product_search_bar.dart';
 import 'package:flutter/material.dart';
 
 class AllProductsPage extends StatefulWidget {
@@ -14,6 +15,8 @@ class AllProductsPage extends StatefulWidget {
 class _AllProductsPageState extends State<AllProductsPage> {
   Map<String, bool> variantVisibility = {};
   late Future<List<Map<String, dynamic>>> _productsFuture;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -90,28 +93,55 @@ class _AllProductsPageState extends State<AllProductsPage> {
           return const Center(child: Text('No products found.'));
 
         final products = snapshot.data!;
+        final filteredProducts = products.where((product) {
+          final name = (product['product_name'] ?? '').toLowerCase();
+          final sku = (product['sku_id'] ?? '').toLowerCase();
+          return name.contains(_searchQuery.toLowerCase()) ||
+              sku.contains(_searchQuery.toLowerCase());
+        }).toList();
 
-        return RefreshIndicator(
-          onRefresh: refreshProducts,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(10),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              final data = products[index];
-              final docId = data['doc_id'];
+        return Column(
+          children: [
+            ProductSearchBar(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+            Expanded(
+              child: filteredProducts.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No matching products found.',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: refreshProducts,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(10),
+                        itemCount: filteredProducts.length,
+                        itemBuilder: (context, index) {
+                          final data = filteredProducts[index];
+                          final docId = data['doc_id'];
 
-              return ProductTile(
-                data: data,
-                showVariants: variantVisibility[docId] ?? false,
-                onToggleVariants: () {
-                  setState(() {
-                    variantVisibility[docId] =
-                        !(variantVisibility[docId] ?? false);
-                  });
-                },
-              );
-            },
-          ),
+                          return ProductTile(
+                            data: data,
+                            showVariants: variantVisibility[docId] ?? false,
+                            onToggleVariants: () {
+                              setState(() {
+                                variantVisibility[docId] =
+                                    !(variantVisibility[docId] ?? false);
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+            ),
+          ],
         );
       },
     );
