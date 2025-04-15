@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
 import '../Banner/add_banner_page.dart';
+import '../Main_Category/main_category_page.dart';
+import '../Main_Category/main_category_tab.dart';
 import '../Profile/profile_page.dart';
 import '../Category/category_page.dart';
 import '../Product/product_page.dart';
@@ -71,6 +73,14 @@ class HomePage extends StatelessWidget {
                 _buildBox(context, Icons.store, "Add New Shop", AddShopPage()),
                 _buildBox(
                     context, Icons.visibility, "View Shop", ViewShopPage()),
+              ],
+            ),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildBox(context, Icons.list_alt_sharp, "Main Category",
+                    MainCategoryTabPage()),
               ],
             ),
           ],
