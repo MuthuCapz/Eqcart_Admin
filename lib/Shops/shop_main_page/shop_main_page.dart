@@ -1,4 +1,5 @@
 import 'package:eqcart_admin/Banner/add_banner_page.dart';
+import 'package:eqcart_admin/Shops/add_new_shop/shop_settings/shop_settings.dart';
 import 'package:flutter/material.dart';
 import '../../Category/category_list_page.dart';
 import '../../Category/category_page.dart';
@@ -42,6 +43,15 @@ class ShopMainPage extends StatelessWidget {
                     AddBannerPage(shopId: shopId)),
                 _buildMenuButton(context, Icons.category_sharp, "Lists",
                     CategoryListpage(shopId: shopId)),
+              ],
+            ),
+            SizedBox(height: 16), // Space between rows
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildMenuButton(context, Icons.settings, "Settings",
+                    ShopSettings(shopId: shopId)),
               ],
             ),
           ],

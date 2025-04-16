@@ -4,6 +4,7 @@ import '../../Category/category_list_page.dart';
 import '../../Category/category_page.dart';
 import '../../Product/product_page.dart';
 import '../../utils/colors.dart';
+import '../add_new_shop/shop_settings/shop_settings.dart';
 
 class OwnShopMainPage extends StatelessWidget {
   final String shopId;
@@ -42,6 +43,15 @@ class OwnShopMainPage extends StatelessWidget {
                     AddBannerPage(shopId: shopId)),
                 _buildMenuButton(context, Icons.category_sharp, "Lists",
                     CategoryListpage(shopId: shopId)),
+              ],
+            ),
+            SizedBox(height: 16), // Space between rows
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildMenuButton(context, Icons.settings, "Settings",
+                    ShopSettings(shopId: shopId)),
               ],
             ),
           ],

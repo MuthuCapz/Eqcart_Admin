@@ -9,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import '../add_new_shop/MapSelectionPage.dart';
+import '../add_new_shop/shop_settings/shop_settings.dart';
 import '../add_new_shop/validators.dart';
 
 class AddOwnShopPage extends StatefulWidget {
@@ -158,7 +159,10 @@ class _AddOwnShopPageState extends State<AddOwnShopPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Shop added successfully!')),
       );
-      Navigator.pop(context);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => ShopSettings(shopId: shopId)),
+      );
     }
   }
 

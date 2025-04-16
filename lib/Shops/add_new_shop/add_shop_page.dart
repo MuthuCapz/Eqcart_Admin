@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:eqcart_admin/Shops/add_new_shop/shop_settings/shop_settings.dart';
 import 'package:eqcart_admin/Shops/add_new_shop/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
@@ -26,6 +27,46 @@ class _AddShopPageState extends State<AddShopPage> {
   final TextEditingController _ownerNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   bool _passwordVisible = false;
+  List<String> _categoryList = [];
+  String? _selectedCategory;
+  bool _isCategoryLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCategories();
+  }
+
+  void _fetchCategories() async {
+    try {
+      QuerySnapshot snapshot =
+          await FirebaseFirestore.instance.collection('main_categories').get();
+
+      List<String> allCategories = [];
+
+      for (var doc in snapshot.docs) {
+        List<dynamic>? categories = doc.get('categories');
+        if (categories != null) {
+          for (var category in categories) {
+            if (category is Map<String, dynamic> &&
+                category.containsKey('category_name')) {
+              allCategories.add(category['category_name']);
+            }
+          }
+        }
+      }
+
+      setState(() {
+        _categoryList = allCategories.toSet().toList(); // Remove duplicates
+        _isCategoryLoading = false;
+      });
+    } catch (e) {
+      print("Error fetching categories: $e");
+      setState(() {
+        _isCategoryLoading = false;
+      });
+    }
+  }
 
   XFile? _logoImage;
   final ImagePicker _picker = ImagePicker();
@@ -127,7 +168,7 @@ class _AddShopPageState extends State<AddShopPage> {
         'shop_id': shopId,
         'password': _passwordController.text,
         'description': _descriptionController.text,
-        'type': _typeController.text,
+        'type': _selectedCategory,
         'location': _locationController.text,
         'owner_name': _ownerNameController.text,
         'owner_phone': _phoneController.text,
@@ -154,7 +195,10 @@ class _AddShopPageState extends State<AddShopPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Shop added successfully!')),
       );
-      Navigator.pop(context);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => ShopSettings(shopId: shopId)),
+      );
     }
   }
 
@@ -182,7 +226,7 @@ class _AddShopPageState extends State<AddShopPage> {
                 _buildPasswordField(),
                 _buildTextField('Description', _descriptionController,
                     validator: Validators.validateDescription, maxLines: 3),
-                _buildTextField('Type', _typeController,
+                _buildTextField2('Type', _typeController,
                     validator: Validators.validateType),
                 _buildImagePicker(),
                 _buildTextField1('Location', _locationController,
@@ -323,6 +367,42 @@ class _AddShopPageState extends State<AddShopPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField2(String label, TextEditingController controller,
+      {int maxLines = 1, String? Function(String?)? validator}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8.0),
+      child: _isCategoryLoading
+          ? Center(child: CircularProgressIndicator())
+          : DropdownButtonFormField<String>(
+              value: _selectedCategory,
+              decoration: InputDecoration(
+                labelText: 'Type',
+                labelStyle: TextStyle(color: AppColors.secondaryColor),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(),
+                focusedBorder: OutlineInputBorder(
+                  borderSide:
+                      BorderSide(color: AppColors.secondaryColor, width: 2.0),
+                ),
+              ),
+              items: _categoryList.map((String category) {
+                return DropdownMenuItem<String>(
+                  value: category,
+                  child: Text(category),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedCategory = newValue;
+                });
+              },
+              validator: (value) =>
+                  value == null ? 'Please select a type' : null,
+            ),
     );
   }
 
