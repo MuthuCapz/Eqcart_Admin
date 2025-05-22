@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
 import '../Banner/add_banner_page.dart';
+import '../Delivery_Disble/delivery_disble_time.dart';
 import '../Main_Category/main_category_page.dart';
 import '../Main_Category/main_category_tab.dart';
 import '../Profile/profile_page.dart';
@@ -81,6 +82,8 @@ class HomePage extends StatelessWidget {
               children: [
                 _buildBox(context, Icons.list_alt_sharp, "Main Category",
                     MainCategoryTabPage()),
+                _buildBox(context, Icons.timer_off_outlined,
+                    "Delivery Disble time", DeliveryDisableTime()),
               ],
             ),
           ],
