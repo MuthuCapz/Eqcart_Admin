@@ -7,6 +7,7 @@ import '../Main_Category/main_category_tab.dart';
 import '../Profile/profile_page.dart';
 import '../Category/category_page.dart';
 import '../Product/product_page.dart';
+import '../Riders_Info/riders_info_page.dart';
 import '../Shops/add_new_shop/add_shop_page.dart';
 import '../Shops/add_own_shop/add_own_shop_page.dart';
 import '../Shops/view_own_shop/view_own_shop_page.dart';
@@ -84,6 +85,14 @@ class HomePage extends StatelessWidget {
                     MainCategoryTabPage()),
                 _buildBox(context, Icons.timer_off_outlined,
                     "Delivery Disble time", DeliveryDisableTime()),
+              ],
+            ),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildBox(context, Icons.perm_identity_outlined, "Riders_Info",
+                    RidersInfoPage()),
               ],
             ),
           ],
