@@ -237,7 +237,7 @@ class _AddProductPageState extends State<AddProductPage> {
                     (value) => setState(() => selectedCategory = value)),
                 _buildTextField('Product Description', descriptionController,
                     maxLines: 3),
-                _buildDropdown('Status', statusOptions, selectedStatus,
+                _buildDropdown('Stock', statusOptions, selectedStatus,
                     (value) => setState(() => selectedStatus = value)),
                 _buildTextField('Discount', discountController, isNumber: true),
                 SizedBox(height: 10),

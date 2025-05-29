@@ -175,6 +175,7 @@ class _AddShopPageState extends State<AddShopPage> {
         'createDateTime': formattedDate,
         'updateDateTime': formattedDate,
         'shop_logo': imageUrl,
+        'isActive': true,
         'location': {
           'address': _locationController.text,
           'latitude': latitude,

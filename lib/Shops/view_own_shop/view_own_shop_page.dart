@@ -64,119 +64,196 @@ class ShopListView extends StatelessWidget {
         String shopName = shop['shop_name'] ?? 'No Name';
         String ownerPhone = shop['owner_phone'] ?? 'No Phone';
         String address = shop['location']['city'] ?? 'No Address';
+        bool isActive =
+            shop['isActive'] ?? true; // Default to active if not set
 
-        return InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => OwnShopMainPage(shopId: shopId),
-              ),
-            );
-          },
-          child: Container(
-            margin: EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border:
-                  Border.all(color: AppColors.secondaryColor.withOpacity(0.2)),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Shop Name
-                  Row(
-                    children: [
-                      Icon(Icons.storefront,
-                          color: AppColors.primaryColor, size: 24),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          shopName,
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 6),
-
-                  // Owner Phone
-                  Row(
-                    children: [
-                      Icon(Icons.phone,
-                          color: AppColors.primaryColor, size: 20),
-                      SizedBox(width: 8),
-                      Text(ownerPhone,
-                          style:
-                              TextStyle(fontSize: 14, color: Colors.black87)),
-                    ],
-                  ),
-                  SizedBox(height: 6),
-
-                  // Address
-                  Row(
-                    children: [
-                      Icon(Icons.location_on,
-                          color: AppColors.primaryColor, size: 20),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          address,
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-
-                  // Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () => editShop(context, shop.id),
-                        icon: Icon(Icons.edit, size: 16, color: Colors.white),
-                        label: Text('Edit',
-                            style:
-                                TextStyle(fontSize: 14, color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          backgroundColor: AppColors.secondaryColor,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6)),
-                        ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () => deleteShop(shop.id),
-                        icon: Icon(Icons.delete, size: 16, color: Colors.white),
-                        label: Text('Delete',
-                            style:
-                                TextStyle(fontSize: 14, color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          backgroundColor: Colors.redAccent,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+        return ShopListItem(
+          shopId: shopId,
+          shopName: shopName,
+          ownerPhone: ownerPhone,
+          address: address,
+          isActive: isActive,
         );
       },
+    );
+  }
+}
+
+class ShopListItem extends StatefulWidget {
+  final String shopId;
+  final String shopName;
+  final String ownerPhone;
+  final String address;
+  final bool isActive;
+
+  const ShopListItem({
+    required this.shopId,
+    required this.shopName,
+    required this.ownerPhone,
+    required this.address,
+    required this.isActive,
+  });
+
+  @override
+  _ShopListItemState createState() => _ShopListItemState();
+}
+
+class _ShopListItemState extends State<ShopListItem> {
+  late bool _isActive;
+
+  @override
+  void initState() {
+    super.initState();
+    _isActive = widget.isActive;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: _isActive
+          ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => OwnShopMainPage(shopId: widget.shopId),
+                ),
+              );
+            }
+          : null,
+      child: Opacity(
+        opacity: _isActive ? 1.0 : 0.6,
+        child: Container(
+          margin: EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border:
+                Border.all(color: AppColors.secondaryColor.withOpacity(0.2)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row with shop name and dropdown
+                Row(
+                  children: [
+                    Icon(Icons.storefront,
+                        color: AppColors.primaryColor, size: 24),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.shopName,
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // Status dropdown
+                    _buildStatusDropdown(),
+                  ],
+                ),
+                SizedBox(height: 6),
+
+                // Owner Phone
+                Row(
+                  children: [
+                    Icon(Icons.phone, color: AppColors.primaryColor, size: 20),
+                    SizedBox(width: 8),
+                    Text(widget.ownerPhone,
+                        style: TextStyle(fontSize: 14, color: Colors.black87)),
+                  ],
+                ),
+                SizedBox(height: 6),
+
+                // Address
+                Row(
+                  children: [
+                    Icon(Icons.location_on,
+                        color: AppColors.primaryColor, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.address,
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+
+                // Buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () => editShop(context, widget.shopId),
+                      icon: Icon(Icons.edit, size: 16, color: Colors.white),
+                      label: Text('Edit',
+                          style: TextStyle(fontSize: 14, color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        backgroundColor: AppColors.secondaryColor,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => deleteShop(widget.shopId),
+                      icon: Icon(Icons.delete, size: 16, color: Colors.white),
+                      label: Text('Delete',
+                          style: TextStyle(fontSize: 14, color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        backgroundColor: Colors.redAccent,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusDropdown() {
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: _isActive ? 'Active' : 'Inactive',
+        icon: Icon(Icons.arrow_drop_down, color: AppColors.primaryColor),
+        iconSize: 24,
+        elevation: 16,
+        style: TextStyle(
+          color: _isActive ? Colors.green : Colors.grey,
+          fontWeight: FontWeight.bold,
+        ),
+        onChanged: (String? newValue) {
+          setState(() {
+            _isActive = newValue == 'Active';
+            // Update the status in Firestore
+            FirebaseFirestore.instance
+                .collection('own_shops')
+                .doc(widget.shopId)
+                .update({'isActive': _isActive});
+          });
+        },
+        items: <String>['Active', 'Inactive']
+            .map<DropdownMenuItem<String>>((String value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          );
+        }).toList(),
+      ),
     );
   }
 
