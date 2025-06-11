@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
@@ -68,10 +69,22 @@ class _AddOwnShopPageState extends State<AddOwnShopPage> {
     });
   }
 
+  String _generateCustomShopId(String shopName) {
+    String cleanName =
+        shopName.trim().toUpperCase().replaceAll(RegExp(r'[^A-Z]'), '');
+    String prefix = cleanName.length >= 3
+        ? cleanName.substring(0, 3)
+        : cleanName.padRight(3, 'X');
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    String randomCode =
+        List.generate(5, (index) => chars[Random().nextInt(chars.length)])
+            .join();
+    return '$prefix\_$randomCode';
+  }
+
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      String shopId =
-          FirebaseFirestore.instance.collection('own_shops').doc().id;
+      String shopId = _generateCustomShopId(_shopNameController.text);
       DateTime now = DateTime.now();
       String formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
       String? imageUrl;

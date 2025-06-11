@@ -24,7 +24,7 @@ class DeliveryDisableTimeUI extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.secondaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Delivery Disable Time',
+        title: const Text('Shops Disable Time',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
         elevation: 4,

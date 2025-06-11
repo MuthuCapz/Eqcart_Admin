@@ -27,7 +27,8 @@ class _EditProductDialogState extends State<EditProductDialog> {
   late TextEditingController discountController;
 
   late String imageUrl;
-  late int stockStatus;
+  late String stockStatus;
+
   late List<Map<String, dynamic>> variants;
 
   @override
@@ -42,7 +43,8 @@ class _EditProductDialogState extends State<EditProductDialog> {
         TextEditingController(text: p['product_weight'].toString());
     discountController = TextEditingController(text: p['discount'].toString());
     imageUrl = p['image_url'] ?? '';
-    stockStatus = p['stock'] == 0 ? 0 : 1;
+    stockStatus = (p['stock'] is String) ? p['stock'] : 'In Stock';
+
     variants = List<Map<String, dynamic>>.from(p['variants'] ?? []);
   }
 
@@ -180,10 +182,9 @@ class _EditProductDialogState extends State<EditProductDialog> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: variant['stock'] == 0
-                                  ? 'Outstock'
-                                  : 'Instock',
-                              decoration: InputDecoration(labelText: 'Stock'),
+                              value: _getValidStockValue(variant['stock']),
+                              decoration:
+                                  const InputDecoration(labelText: 'Stock'),
                               items: const [
                                 DropdownMenuItem(
                                     value: 'Instock', child: Text("Instock")),
@@ -192,8 +193,7 @@ class _EditProductDialogState extends State<EditProductDialog> {
                               ],
                               onChanged: (value) {
                                 setState(() {
-                                  variant['stock'] =
-                                      value == 'Outstock' ? 0 : 1;
+                                  variant['stock'] = value ?? 'Instock';
                                 });
                               },
                             ),
@@ -215,8 +215,12 @@ class _EditProductDialogState extends State<EditProductDialog> {
               child: TextButton.icon(
                 onPressed: () {
                   setState(() {
-                    variants.add(
-                        {'volume': '', 'price': 0.0, 'mrp': 0.0, 'stock': 0});
+                    variants.add({
+                      'volume': '',
+                      'price': 0.0,
+                      'mrp': 0.0,
+                      'stock': 'Instock'
+                    });
                   });
                 },
                 icon: Icon(Icons.add_circle_outline, color: Colors.green),
@@ -244,6 +248,13 @@ class _EditProductDialogState extends State<EditProductDialog> {
         ),
       ],
     );
+  }
+
+  String _getValidStockValue(dynamic stockValue) {
+    final value = (stockValue ?? '').toString().trim().toLowerCase();
+    if (value == 'instock'.toLowerCase()) return 'Instock';
+    if (value == 'outstock'.toLowerCase()) return 'Outstock';
+    return 'Instock'; // fallback
   }
 
   Widget _buildTextField(TextEditingController controller, String label,
@@ -276,13 +287,13 @@ class _EditProductDialogState extends State<EditProductDialog> {
   Widget _buildDropdownStock() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: DropdownButtonFormField<int>(
+      child: DropdownButtonFormField<String>(
         value: stockStatus,
         items: const [
-          DropdownMenuItem(value: 1, child: Text("In Stock")),
-          DropdownMenuItem(value: 0, child: Text("Out of Stock")),
+          DropdownMenuItem(value: 'In Stock', child: Text("In Stock")),
+          DropdownMenuItem(value: 'Out of Stock', child: Text("Out of Stock")),
         ],
-        onChanged: (val) => setState(() => stockStatus = val ?? 1),
+        onChanged: (val) => setState(() => stockStatus = val ?? 'In Stock'),
         decoration: InputDecoration(
           labelText: 'Stock Status',
           border: OutlineInputBorder(),

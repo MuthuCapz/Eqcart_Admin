@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
 import '../Banner/add_banner_page.dart';
+import '../Coupon_Code/coupon_code_page.dart';
 import '../Delivery_Disble/delivery_disble_time.dart';
 import '../Main_Category/main_category_page.dart';
 import '../Main_Category/main_category_tab.dart';
+import '../Order_Details/order_details_page.dart';
 import '../Profile/profile_page.dart';
 import '../Category/category_page.dart';
 import '../Product/product_page.dart';
@@ -83,8 +85,8 @@ class HomePage extends StatelessWidget {
               children: [
                 _buildBox(context, Icons.list_alt_sharp, "Main Category",
                     MainCategoryTabPage()),
-                _buildBox(context, Icons.timer_off_outlined,
-                    "Delivery Disble time", DeliveryDisableTime()),
+                _buildBox(context, Icons.shopping_cart_outlined,
+                    "Order Details", OrderDetailsPage()),
               ],
             ),
             SizedBox(height: 20),
@@ -93,6 +95,16 @@ class HomePage extends StatelessWidget {
               children: [
                 _buildBox(context, Icons.perm_identity_outlined, "Riders_Info",
                     RidersInfoPage()),
+                _buildBox(context, Icons.timer_off_outlined,
+                    "Shops Disble time", DeliveryDisableTime()),
+              ],
+            ),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildBox(context, Icons.discount_outlined, "Coupon Code",
+                    CouponCodePage()),
               ],
             ),
           ],

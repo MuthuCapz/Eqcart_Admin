@@ -129,7 +129,7 @@ class _AddProductPageState extends State<AddProductPage> {
         'product_name': nameController.text.trim(),
         'sku_id': skuId,
         'product_price': double.parse(priceController.text),
-        'product_weight': double.parse(weightController.text),
+        'product_weight': weightController.text.trim(),
         'variants': variants,
         'category': selectedCategory,
         'description': descriptionController.text.trim(),
@@ -232,7 +232,8 @@ class _AddProductPageState extends State<AddProductPage> {
                 _buildTextField('Product Name', nameController),
                 _buildReadOnlyField('SKU ID', skuController),
                 _buildTextField('Product Price', priceController),
-                _buildTextField('Product Weight', weightController),
+                _buildTextField(
+                    'Product Weight (e.g. 500ml or 1kg)', weightController),
                 _buildDropdown('Category', categories, selectedCategory,
                     (value) => setState(() => selectedCategory = value)),
                 _buildTextField('Product Description', descriptionController,
