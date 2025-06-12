@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../utils/colors.dart';
-import '../Banner/add_banner_page.dart';
-import '../Coupon_Code/coupon_code_page.dart';
+import '../Coupon_Code/coupon_management_page.dart';
 import '../Delivery_Disble/delivery_disble_time.dart';
-import '../Main_Category/main_category_page.dart';
 import '../Main_Category/main_category_tab.dart';
 import '../Order_Details/order_details_page.dart';
 import '../Profile/profile_page.dart';
-import '../Category/category_page.dart';
-import '../Product/product_page.dart';
 import '../Riders_Info/riders_info_page.dart';
 import '../Shops/add_new_shop/add_shop_page.dart';
 import '../Shops/add_own_shop/add_own_shop_page.dart';
 import '../Shops/view_own_shop/view_own_shop_page.dart';
 import '../Shops/view_shop/view_shop_page.dart';
+import '../Users_Queries/users_queries_page.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -104,7 +101,9 @@ class HomePage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildBox(context, Icons.discount_outlined, "Coupon Code",
-                    CouponCodePage()),
+                    CouponManagementPage()),
+                _buildBox(context, Icons.query_stats_outlined, "Users Queries",
+                    UsersQueriesPage()),
               ],
             ),
           ],

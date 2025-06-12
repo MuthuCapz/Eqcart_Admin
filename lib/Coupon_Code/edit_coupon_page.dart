@@ -1,98 +1,46 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+
 import '../utils/colors.dart';
 import 'coupon.dart';
 
-class CouponCodeForm extends StatefulWidget {
-  const CouponCodeForm({super.key});
+class EditCouponPage extends StatefulWidget {
+  final Coupon coupon;
+
+  const EditCouponPage({super.key, required this.coupon});
 
   @override
-  State<CouponCodeForm> createState() => _CouponCodeFormState();
+  State<EditCouponPage> createState() => _EditCouponPageState();
 }
 
-class _CouponCodeFormState extends State<CouponCodeForm> {
-  final TextEditingController codeController = TextEditingController();
-  final TextEditingController discountController = TextEditingController();
-  final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController usageLimitController = TextEditingController();
+class _EditCouponPageState extends State<EditCouponPage> {
+  late TextEditingController codeController;
+  late TextEditingController discountController;
+  late TextEditingController descriptionController;
+  late TextEditingController usageLimitController;
 
   DateTime? expiryDate;
-  CouponType selectedType = CouponType.common;
+  late CouponType selectedType;
   List<String> selectedShopIds = [];
   List<Map<String, String>> availableShops = [];
 
-  Future<void> submitCoupon() async {
-    final code = codeController.text.trim();
-    final discount = double.tryParse(discountController.text.trim()) ?? 0.0;
-    final description = descriptionController.text.trim();
-    final maxUsage = int.tryParse(usageLimitController.text.trim()) ?? 1;
+  @override
+  void initState() {
+    super.initState();
+    final coupon = widget.coupon;
 
-    if (code.isEmpty || discount <= 0 || description.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields correctly.')),
-      );
-      return;
-    }
+    codeController = TextEditingController(text: coupon.code);
+    discountController =
+        TextEditingController(text: coupon.discount.toString());
+    descriptionController = TextEditingController(text: coupon.description);
+    usageLimitController =
+        TextEditingController(text: coupon.maxUsagePerUser.toString());
 
-    final now = DateTime.now();
-    final selectedShops = availableShops
-        .where((shop) => selectedShopIds.contains(shop['id']))
-        .map((shop) => {
-              'id': shop['id']!,
-              'name': shop['name']!,
-            })
-        .toList();
+    expiryDate = coupon.expiryDate;
+    selectedType = coupon.type;
+    selectedShopIds = coupon.applicableShops.map((e) => e['id']!).toList();
 
-    final coupon = Coupon(
-      code: code,
-      description: description,
-      discount: discount,
-      expiryDate: expiryDate ?? now.add(const Duration(days: 30)),
-      type: selectedType,
-      applicableShops: selectedType == CouponType.common ? [] : selectedShops,
-      createdAt: now,
-      maxUsagePerUser: maxUsage,
-    );
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('coupons')
-          .doc(coupon.code)
-          .set(coupon.toJson());
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Coupon saved successfully!')),
-      );
-
-      // Clear form
-      codeController.clear();
-      discountController.clear();
-      descriptionController.clear();
-      setState(() {
-        selectedType = CouponType.common;
-        selectedShopIds.clear();
-        availableShops.clear();
-        expiryDate = null;
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving coupon: $e')),
-      );
-    }
-  }
-
-  Future<void> selectExpiryDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: expiryDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        expiryDate = picked;
-      });
-    }
+    fetchShopsForType(selectedType);
   }
 
   Future<void> fetchShopsForType(CouponType type) async {
@@ -116,10 +64,78 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
     });
   }
 
+  Future<void> selectExpiryDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: expiryDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        expiryDate = picked;
+      });
+    }
+  }
+
+  Future<void> updateCoupon() async {
+    final code = codeController.text.trim();
+    final discount = double.tryParse(discountController.text.trim()) ?? 0.0;
+    final description = descriptionController.text.trim();
+    final maxUsage = int.tryParse(usageLimitController.text.trim()) ?? 1;
+
+    if (code.isEmpty || discount <= 0 || description.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields correctly.')),
+      );
+      return;
+    }
+
+    final selectedShops = availableShops
+        .where((shop) => selectedShopIds.contains(shop['id']))
+        .map((shop) => {
+              'id': shop['id']!,
+              'name': shop['name']!,
+            })
+        .toList();
+
+    final updatedCoupon = Coupon(
+      code: code,
+      description: description,
+      discount: discount,
+      expiryDate: expiryDate ?? DateTime.now().add(const Duration(days: 30)),
+      type: selectedType,
+      applicableShops: selectedType == CouponType.common ? [] : selectedShops,
+      createdAt: widget.coupon.createdAt,
+      maxUsagePerUser: maxUsage,
+    );
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('coupons')
+          .doc(updatedCoupon.code)
+          .set(updatedCoupon.toJson());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Coupon updated successfully!')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating coupon: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
+      appBar: AppBar(
+        title: const Text('Edit Coupon', style: TextStyle(color: Colors.white)),
+        backgroundColor: AppColors.secondaryColor,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
@@ -127,6 +143,7 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
             TextField(
               controller: codeController,
               decoration: const InputDecoration(labelText: 'Coupon Code'),
+              enabled: false, // Prevent editing coupon code
             ),
             TextField(
               controller: discountController,
@@ -140,8 +157,8 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
             TextField(
               controller: usageLimitController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                  labelText: 'Max Usage per User (count)'),
+              decoration:
+                  const InputDecoration(labelText: 'Max Usage per User'),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<CouponType>(
@@ -193,8 +210,7 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
                         selected: isSelected,
                         onSelected: (selected) {
                           setState(() {
-                            if (selected &&
-                                !selectedShopIds.contains(shop['id'])) {
+                            if (selected && !isSelected) {
                               selectedShopIds.add(shop['id']!);
                             } else if (!selected) {
                               selectedShopIds.remove(shop['id']);
@@ -224,66 +240,12 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: submitCoupon,
-              child: const Text('Save Coupon'),
+              onPressed: updateCoupon,
+              child: const Text('Update Coupon'),
             ),
           ],
         ),
       ),
     );
   }
-}
-// Models
-
-enum CouponType {
-  common,
-  specificShop, // own shops
-  multiShop, // multiple shops
-}
-
-class Coupon {
-  final String code;
-  final String description;
-  final double discount;
-  final DateTime expiryDate;
-  final CouponType type;
-  final List<Map<String, String>> applicableShops;
-  final DateTime createdAt;
-  final int maxUsagePerUser;
-
-  Coupon({
-    required this.code,
-    required this.description,
-    required this.discount,
-    required this.expiryDate,
-    required this.type,
-    required this.applicableShops,
-    required this.createdAt,
-    required this.maxUsagePerUser,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'code': code,
-        'description': description,
-        'discount': discount,
-        'expiryDate': expiryDate.toIso8601String(),
-        'type': type.name,
-        'applicableShops': applicableShops,
-        'createdAt': createdAt.toIso8601String(),
-        'maxUsagePerUser': maxUsagePerUser,
-      };
-
-  factory Coupon.fromJson(Map<String, dynamic> json) => Coupon(
-        code: json['code'],
-        description: json['description'],
-        discount: (json['discount'] as num).toDouble(),
-        expiryDate: DateTime.parse(json['expiryDate']),
-        type: CouponType.values.firstWhere((e) => e.name == json['type']),
-        applicableShops: List<Map<String, String>>.from(
-          (json['applicableShops'] as List)
-              .map((e) => Map<String, String>.from(e)),
-        ),
-        createdAt: DateTime.parse(json['createdAt']),
-        maxUsagePerUser: json['maxUsagePerUser'] ?? 1,
-      );
 }
