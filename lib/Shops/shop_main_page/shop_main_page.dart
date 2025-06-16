@@ -5,6 +5,7 @@ import '../../Category/category_list_page.dart';
 import '../../Category/category_page.dart';
 import '../../Product/product_page.dart';
 import '../../utils/colors.dart';
+import '../add_new_shop/coupons/shops_coupons_page.dart';
 
 class ShopMainPage extends StatelessWidget {
   final String shopId;
@@ -52,6 +53,8 @@ class ShopMainPage extends StatelessWidget {
               children: [
                 _buildMenuButton(context, Icons.settings, "Settings",
                     ShopSettings(shopId: shopId)),
+                _buildMenuButton(context, Icons.discount_outlined, "Coupons",
+                    ShopsCouponsPage(shopId: shopId)),
               ],
             ),
           ],

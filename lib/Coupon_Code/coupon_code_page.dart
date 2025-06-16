@@ -1,3 +1,4 @@
+// coupon_code_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/colors.dart';
@@ -15,17 +16,32 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
   final TextEditingController discountController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController usageLimitController = TextEditingController();
+  final TextEditingController minimumOrderController = TextEditingController();
 
-  DateTime? expiryDate;
+  DateTime? validFrom;
+  DateTime? validTo;
   CouponType selectedType = CouponType.common;
   List<String> selectedShopIds = [];
   List<Map<String, String>> availableShops = [];
+
+  InputDecoration inputDecoration(String label) => InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      );
 
   Future<void> submitCoupon() async {
     final code = codeController.text.trim();
     final discount = double.tryParse(discountController.text.trim()) ?? 0.0;
     final description = descriptionController.text.trim();
     final maxUsage = int.tryParse(usageLimitController.text.trim()) ?? 1;
+    final minOrderValue =
+        double.tryParse(minimumOrderController.text.trim()) ?? 0.0;
 
     if (code.isEmpty || discount <= 0 || description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -34,20 +50,26 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
       return;
     }
 
+    if (validFrom == null || validTo == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select validity dates.')),
+      );
+      return;
+    }
+
     final now = DateTime.now();
     final selectedShops = availableShops
         .where((shop) => selectedShopIds.contains(shop['id']))
-        .map((shop) => {
-              'id': shop['id']!,
-              'name': shop['name']!,
-            })
+        .map((shop) => {'id': shop['id']!, 'name': shop['name']!})
         .toList();
 
     final coupon = Coupon(
       code: code,
       description: description,
       discount: discount,
-      expiryDate: expiryDate ?? now.add(const Duration(days: 30)),
+      minimumOrderValue: minOrderValue,
+      validFrom: validFrom!,
+      validTo: validTo!,
       type: selectedType,
       applicableShops: selectedType == CouponType.common ? [] : selectedShops,
       createdAt: now,
@@ -68,11 +90,13 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
       codeController.clear();
       discountController.clear();
       descriptionController.clear();
+      minimumOrderController.clear();
       setState(() {
         selectedType = CouponType.common;
         selectedShopIds.clear();
         availableShops.clear();
-        expiryDate = null;
+        validFrom = null;
+        validTo = null;
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -81,16 +105,29 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
     }
   }
 
-  Future<void> selectExpiryDate(BuildContext context) async {
-    final picked = await showDatePicker(
+  Future<void> selectValidDateRange(BuildContext context) async {
+    final picked = await showDateRangePicker(
       context: context,
-      initialDate: expiryDate ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primaryColor,
+              onPrimary: Colors.white,
+              surface: AppColors.backgroundColor,
+              onSurface: Colors.black87,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
-        expiryDate = picked;
+        validFrom = picked.start;
+        validTo = picked.end;
       });
     }
   }
@@ -118,172 +155,186 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            TextField(
-              controller: codeController,
-              decoration: const InputDecoration(labelText: 'Coupon Code'),
-            ),
-            TextField(
-              controller: discountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Discount %'),
-            ),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
-            ),
-            TextField(
-              controller: usageLimitController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                  labelText: 'Max Usage per User (count)'),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<CouponType>(
-              value: selectedType,
-              items: CouponType.values.map((type) {
-                String label;
-                switch (type) {
-                  case CouponType.common:
-                    label = 'Common';
-                    break;
-                  case CouponType.specificShop:
-                    label = 'Own Shops';
-                    break;
-                  case CouponType.multiShop:
-                    label = 'Multiple Shops';
-                    break;
-                }
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(label),
-                );
-              }).toList(),
-              onChanged: (value) async {
-                if (value != null) {
-                  setState(() {
-                    selectedType = value;
-                    selectedShopIds.clear();
-                    availableShops.clear();
-                  });
-                  await fetchShopsForType(value);
-                }
-              },
-              decoration: const InputDecoration(labelText: 'Coupon Type'),
-            ),
-            if (selectedType == CouponType.specificShop ||
-                selectedType == CouponType.multiShop)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  const Text('Select Shops:'),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: availableShops.map((shop) {
-                      final isSelected = selectedShopIds.contains(shop['id']);
-                      return FilterChip(
-                        label: Text(shop['name']!),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          setState(() {
-                            if (selected &&
-                                !selectedShopIds.contains(shop['id'])) {
-                              selectedShopIds.add(shop['id']!);
-                            } else if (!selected) {
-                              selectedShopIds.remove(shop['id']);
+    return Theme(
+      data: Theme.of(context).copyWith(
+        primaryColor: AppColors.primaryColor,
+        scaffoldBackgroundColor: AppColors.backgroundColor,
+        colorScheme: ColorScheme.light(
+          primary: AppColors.primaryColor,
+          secondary: AppColors.secondaryColor,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: AppColors.secondaryColor, width: 2),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: AppColors.secondaryColor, width: 1.5),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: AppColors.secondaryColor),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          labelStyle: TextStyle(color: AppColors.secondaryColor),
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundColor,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: SingleChildScrollView(
+                child: Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'Create a New Coupon',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        TextField(
+                            controller: codeController,
+                            decoration: inputDecoration('Coupon Code')),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: discountController,
+                          keyboardType: TextInputType.number,
+                          decoration: inputDecoration('Discount (%)'),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                            controller: descriptionController,
+                            decoration: inputDecoration('Description')),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: usageLimitController,
+                          keyboardType: TextInputType.number,
+                          decoration: inputDecoration('Max Usage per User'),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: minimumOrderController,
+                          keyboardType: TextInputType.number,
+                          decoration: inputDecoration('Minimum Order Value'),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                validFrom != null && validTo != null
+                                    ? 'Valid: ${validFrom!.toLocal().toString().split(' ')[0]} - ${validTo!.toLocal().toString().split(' ')[0]}'
+                                    : 'No Validity Range Selected',
+                                style: const TextStyle(color: Colors.black87),
+                              ),
+                            ),
+                            TextButton.icon(
+                              icon: const Icon(Icons.date_range),
+                              label: const Text('Pick Dates'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.secondaryColor,
+                              ),
+                              onPressed: () => selectValidDateRange(context),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<CouponType>(
+                          value: selectedType,
+                          decoration: inputDecoration('Coupon Type'),
+                          items: CouponType.values.map((type) {
+                            final label = {
+                              CouponType.common: 'Common',
+                              CouponType.specificShop: 'Own Shops',
+                              CouponType.multiShop: 'Multiple Shops',
+                            }[type];
+                            return DropdownMenuItem(
+                                value: type, child: Text(label!));
+                          }).toList(),
+                          onChanged: (value) async {
+                            if (value != null) {
+                              setState(() {
+                                selectedType = value;
+                                selectedShopIds.clear();
+                                availableShops.clear();
+                              });
+                              await fetchShopsForType(value);
                             }
-                          });
-                        },
-                      );
-                    }).toList(),
+                          },
+                        ),
+                        if (selectedType != CouponType.common) ...[
+                          const SizedBox(height: 16),
+                          const Text('Select Shops:',
+                              style: TextStyle(fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: availableShops.map((shop) {
+                              final isSelected =
+                                  selectedShopIds.contains(shop['id']);
+                              return FilterChip(
+                                label: Text(shop['name']!),
+                                selected: isSelected,
+                                selectedColor:
+                                    AppColors.secondaryColor.withOpacity(0.2),
+                                backgroundColor: Colors.grey[200],
+                                checkmarkColor: AppColors.primaryColor,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      selectedShopIds.add(shop['id']!);
+                                    } else {
+                                      selectedShopIds.remove(shop['id']);
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.save,
+                              color: Colors.white), // icon color
+                          label: const Text('Save Coupon'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryColor,
+                            foregroundColor:
+                                Colors.white, // sets color for icon & label
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          onPressed: submitCoupon,
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    expiryDate != null
-                        ? 'Expires: ${expiryDate!.toLocal().toString().split(' ')[0]}'
-                        : 'No expiry date selected',
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => selectExpiryDate(context),
-                  child: const Text('Pick Expiry Date'),
-                ),
-              ],
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: submitCoupon,
-              child: const Text('Save Coupon'),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
-}
-// Models
-
-enum CouponType {
-  common,
-  specificShop, // own shops
-  multiShop, // multiple shops
-}
-
-class Coupon {
-  final String code;
-  final String description;
-  final double discount;
-  final DateTime expiryDate;
-  final CouponType type;
-  final List<Map<String, String>> applicableShops;
-  final DateTime createdAt;
-  final int maxUsagePerUser;
-
-  Coupon({
-    required this.code,
-    required this.description,
-    required this.discount,
-    required this.expiryDate,
-    required this.type,
-    required this.applicableShops,
-    required this.createdAt,
-    required this.maxUsagePerUser,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'code': code,
-        'description': description,
-        'discount': discount,
-        'expiryDate': expiryDate.toIso8601String(),
-        'type': type.name,
-        'applicableShops': applicableShops,
-        'createdAt': createdAt.toIso8601String(),
-        'maxUsagePerUser': maxUsagePerUser,
-      };
-
-  factory Coupon.fromJson(Map<String, dynamic> json) => Coupon(
-        code: json['code'],
-        description: json['description'],
-        discount: (json['discount'] as num).toDouble(),
-        expiryDate: DateTime.parse(json['expiryDate']),
-        type: CouponType.values.firstWhere((e) => e.name == json['type']),
-        applicableShops: List<Map<String, String>>.from(
-          (json['applicableShops'] as List)
-              .map((e) => Map<String, String>.from(e)),
-        ),
-        createdAt: DateTime.parse(json['createdAt']),
-        maxUsagePerUser: json['maxUsagePerUser'] ?? 1,
-      );
 }

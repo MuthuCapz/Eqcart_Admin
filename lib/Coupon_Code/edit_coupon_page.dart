@@ -1,8 +1,8 @@
+// shops_coupons_edit_page.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import '../utils/colors.dart';
-import 'coupon.dart';
+import 'coupon.dart'; // Importing from the correct location
 
 class EditCouponPage extends StatefulWidget {
   final Coupon coupon;
@@ -18,8 +18,9 @@ class _EditCouponPageState extends State<EditCouponPage> {
   late TextEditingController discountController;
   late TextEditingController descriptionController;
   late TextEditingController usageLimitController;
-
-  DateTime? expiryDate;
+  late TextEditingController minimumOrderController;
+  DateTime? validFrom;
+  DateTime? validTo;
   late CouponType selectedType;
   List<String> selectedShopIds = [];
   List<Map<String, String>> availableShops = [];
@@ -35,12 +36,35 @@ class _EditCouponPageState extends State<EditCouponPage> {
     descriptionController = TextEditingController(text: coupon.description);
     usageLimitController =
         TextEditingController(text: coupon.maxUsagePerUser.toString());
+    minimumOrderController =
+        TextEditingController(text: coupon.minimumOrderValue.toString());
 
-    expiryDate = coupon.expiryDate;
+    validFrom = coupon.validFrom;
+    validTo = coupon.validTo;
     selectedType = coupon.type;
     selectedShopIds = coupon.applicableShops.map((e) => e['id']!).toList();
 
     fetchShopsForType(selectedType);
+  }
+
+  Future<void> selectDate(BuildContext context, DateTime? currentDate,
+      ValueChanged<DateTime> onDatePicked,
+      {bool isStartDate = false}) async {
+    final now = DateTime.now();
+    final initialDate = currentDate ?? now;
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate.isBefore(now) ? now : initialDate,
+      firstDate: isStartDate
+          ? now
+          : validFrom ?? now, // For end date, can't be before start date
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      onDatePicked(picked);
+    }
   }
 
   Future<void> fetchShopsForType(CouponType type) async {
@@ -64,25 +88,13 @@ class _EditCouponPageState extends State<EditCouponPage> {
     });
   }
 
-  Future<void> selectExpiryDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: expiryDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        expiryDate = picked;
-      });
-    }
-  }
-
   Future<void> updateCoupon() async {
     final code = codeController.text.trim();
     final discount = double.tryParse(discountController.text.trim()) ?? 0.0;
     final description = descriptionController.text.trim();
     final maxUsage = int.tryParse(usageLimitController.text.trim()) ?? 1;
+    final minimumOrderValue =
+        double.tryParse(minimumOrderController.text.trim()) ?? 0.0;
 
     if (code.isEmpty || discount <= 0 || description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,11 +115,13 @@ class _EditCouponPageState extends State<EditCouponPage> {
       code: code,
       description: description,
       discount: discount,
-      expiryDate: expiryDate ?? DateTime.now().add(const Duration(days: 30)),
       type: selectedType,
       applicableShops: selectedType == CouponType.common ? [] : selectedShops,
       createdAt: widget.coupon.createdAt,
       maxUsagePerUser: maxUsage,
+      minimumOrderValue: minimumOrderValue,
+      validFrom: validFrom!,
+      validTo: validTo!,
     );
 
     try {
@@ -131,55 +145,43 @@ class _EditCouponPageState extends State<EditCouponPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        title: const Text('Edit Coupon', style: TextStyle(color: Colors.white)),
-        backgroundColor: AppColors.secondaryColor,
+        title: const Text(
+          'Edit Coupon',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: AppColors.primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 4,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: codeController,
-              decoration: const InputDecoration(labelText: 'Coupon Code'),
-              enabled: false, // Prevent editing coupon code
-            ),
-            TextField(
-              controller: discountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Discount %'),
-            ),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
-            ),
-            TextField(
-              controller: usageLimitController,
-              keyboardType: TextInputType.number,
-              decoration:
-                  const InputDecoration(labelText: 'Max Usage per User'),
-            ),
-            const SizedBox(height: 16),
+            _buildSectionTitle('Coupon Details'),
+            _buildTextField('Coupon Code', codeController, enabled: false),
+            _buildTextField('Discount (%)', discountController,
+                inputType: TextInputType.number),
+            _buildTextField('Description', descriptionController),
+            _buildTextField('Max Usage per User', usageLimitController,
+                inputType: TextInputType.number),
+            _buildTextField('Minimum Order Value', minimumOrderController,
+                inputType: TextInputType.number),
+            const SizedBox(height: 20),
+            _buildSectionTitle('Coupon Type'),
             DropdownButtonFormField<CouponType>(
               value: selectedType,
+              dropdownColor: Colors.white,
+              decoration: _inputDecoration('Coupon Type'),
               items: CouponType.values.map((type) {
-                String label;
-                switch (type) {
-                  case CouponType.common:
-                    label = 'Common';
-                    break;
-                  case CouponType.specificShop:
-                    label = 'Own Shops';
-                    break;
-                  case CouponType.multiShop:
-                    label = 'Multiple Shops';
-                    break;
-                }
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(label),
-                );
+                final label = switch (type) {
+                  CouponType.common => 'Common',
+                  CouponType.specificShop => 'Own Shops',
+                  CouponType.multiShop => 'Multiple Shops',
+                };
+                return DropdownMenuItem(value: type, child: Text(label));
               }).toList(),
               onChanged: (value) async {
                 if (value != null) {
@@ -191,16 +193,14 @@ class _EditCouponPageState extends State<EditCouponPage> {
                   await fetchShopsForType(value);
                 }
               },
-              decoration: const InputDecoration(labelText: 'Coupon Type'),
             ),
+            const SizedBox(height: 16),
             if (selectedType == CouponType.specificShop ||
                 selectedType == CouponType.multiShop)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
-                  const Text('Select Shops:'),
-                  const SizedBox(height: 8),
+                  _buildSectionTitle('Select Shops'),
                   Wrap(
                     spacing: 8,
                     children: availableShops.map((shop) {
@@ -210,42 +210,138 @@ class _EditCouponPageState extends State<EditCouponPage> {
                         selected: isSelected,
                         onSelected: (selected) {
                           setState(() {
-                            if (selected && !isSelected) {
+                            if (selected) {
                               selectedShopIds.add(shop['id']!);
-                            } else if (!selected) {
+                            } else {
                               selectedShopIds.remove(shop['id']);
                             }
                           });
                         },
+                        selectedColor:
+                            AppColors.secondaryColor.withOpacity(0.8),
+                        checkmarkColor: Colors.white,
+                        backgroundColor:
+                            AppColors.secondaryColor.withOpacity(0.2),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black87,
+                        ),
                       );
                     }).toList(),
                   ),
                 ],
               ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    expiryDate != null
-                        ? 'Expires: ${expiryDate!.toLocal().toString().split(' ')[0]}'
-                        : 'No expiry date selected',
+            const SizedBox(height: 20),
+            _buildSectionTitle('Validity Period'),
+            _buildDateSelector('Valid From', validFrom, () {
+              selectDate(context, validFrom, (picked) {
+                setState(() => validFrom = picked);
+              }, isStartDate: true);
+            }),
+            const SizedBox(height: 10),
+            _buildDateSelector('Valid To', validTo, () {
+              if (validFrom == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('Please select start date first')),
+                );
+                return;
+              }
+              selectDate(context, validTo, (picked) {
+                setState(() => validTo = picked);
+              }, isStartDate: false);
+            }),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: updateCoupon,
+                icon: const Icon(Icons.save),
+                label: const Text('Update Coupon'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
+                  textStyle: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-                TextButton(
-                  onPressed: () => selectExpiryDate(context),
-                  child: const Text('Pick Expiry Date'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: updateCoupon,
-              child: const Text('Update Coupon'),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller,
+      {bool enabled = true, TextInputType inputType = TextInputType.text}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextField(
+        controller: controller,
+        keyboardType: inputType,
+        enabled: enabled,
+        decoration: _inputDecoration(label),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+
+  Widget _buildDateSelector(String label, DateTime? date, VoidCallback onTap) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            date != null
+                ? '$label: ${date.toLocal().toString().split(' ')[0]}'
+                : 'No date selected',
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+        TextButton(
+          onPressed: onTap,
+          child: Text('Pick Date',
+              style: TextStyle(color: AppColors.primaryColor)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: AppColors.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    codeController.dispose();
+    discountController.dispose();
+    descriptionController.dispose();
+    usageLimitController.dispose();
+    minimumOrderController.dispose();
+    super.dispose();
   }
 }

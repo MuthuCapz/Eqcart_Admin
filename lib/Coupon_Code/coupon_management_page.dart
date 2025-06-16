@@ -1,6 +1,4 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 import '../utils/colors.dart';
 import 'coupon_code_page.dart';
 import 'created_coupons_list.dart';
@@ -20,12 +18,28 @@ class _CouponManagementPageState extends State<CouponManagementPage> {
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
         appBar: AppBar(
-          title: const Text('Coupons Management',
-              style: TextStyle(color: Colors.white)),
           backgroundColor: AppColors.secondaryColor,
           iconTheme: const IconThemeData(color: Colors.white),
-          bottom: const TabBar(
-            tabs: [
+          title: const Text(
+            'Coupons Management',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
+          bottom: TabBar(
+            labelColor: Colors.white, // Selected tab text color
+            unselectedLabelColor: AppColors.backgroundColor.withOpacity(0.7),
+            indicator: const UnderlineTabIndicator(
+              borderSide: BorderSide(width: 3.0, color: Colors.white),
+              insets: EdgeInsets.symmetric(horizontal: 20.0),
+            ),
+            indicatorWeight: 4,
+            indicatorColor: Colors.white,
+            labelStyle:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            tabs: const [
               Tab(text: 'Create Coupon'),
               Tab(text: 'Created Coupons'),
             ],
