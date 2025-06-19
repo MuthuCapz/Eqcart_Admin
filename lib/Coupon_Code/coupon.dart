@@ -10,6 +10,7 @@ class Coupon {
   final String code;
   final String description;
   final double discount;
+  final double? fixedAmount;
   final double minimumOrderValue;
   final DateTime validFrom;
   final DateTime validTo;
@@ -22,6 +23,7 @@ class Coupon {
     required this.code,
     required this.description,
     required this.discount,
+    this.fixedAmount,
     required this.minimumOrderValue,
     required this.validFrom,
     required this.validTo,
@@ -36,6 +38,7 @@ class Coupon {
         'description': description,
         'discount': discount,
         'minimumOrderValue': minimumOrderValue,
+        'fixedAmount': fixedAmount,
         'validFrom': validFrom.toIso8601String(),
         'validTo': validTo.toIso8601String(),
         'type': type.name,
@@ -50,6 +53,7 @@ class Coupon {
       final code = json['code'] as String? ?? '';
       final description = json['description'] as String? ?? '';
       final discount = (json['discount'] as num?)?.toDouble() ?? 0.0;
+      final fixedAmount = (json['fixedAmount'] as num?)?.toDouble() ?? 0.0;
       final minOrderValue =
           (json['minimumOrderValue'] as num?)?.toDouble() ?? 0.0;
       final maxUsage = json['maxUsagePerUser'] as int? ?? 1;
@@ -89,6 +93,7 @@ class Coupon {
         code: code,
         description: description,
         discount: discount,
+        fixedAmount: fixedAmount,
         minimumOrderValue: minOrderValue,
         validFrom: validFrom,
         validTo: validTo,
@@ -105,6 +110,7 @@ class Coupon {
         code: 'INVALID',
         description: 'Invalid coupon data',
         discount: 0,
+        fixedAmount: 0,
         minimumOrderValue: 0,
         validFrom: now,
         validTo: now,

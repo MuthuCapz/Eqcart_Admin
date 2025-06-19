@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../Shops/add_new_shop/coupons/created_shops_coupons_list.dart';
 import '../utils/colors.dart';
 import 'coupon_code_page.dart';
 import 'created_coupons_list.dart';
@@ -14,7 +15,7 @@ class _CouponManagementPageState extends State<CouponManagementPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: AppColors.backgroundColor,
         appBar: AppBar(
@@ -42,6 +43,7 @@ class _CouponManagementPageState extends State<CouponManagementPage> {
             tabs: const [
               Tab(text: 'Create Coupon'),
               Tab(text: 'Created Coupons'),
+              Tab(text: 'Shops Created Coupons'),
             ],
           ),
         ),
@@ -49,6 +51,7 @@ class _CouponManagementPageState extends State<CouponManagementPage> {
           children: [
             CouponCodeForm(),
             CreatedCouponsList(),
+            CreatedShopsCouponsList(),
           ],
         ),
       ),

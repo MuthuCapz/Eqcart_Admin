@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'created_shops_coupons_list.dart';
 import '../../../utils/colors.dart';
-import 'created_coupons_page.dart';
 
 class ShopsCouponsPage extends StatefulWidget {
   final String shopId;
@@ -15,12 +15,31 @@ class _ShopsCouponsPageState extends State<ShopsCouponsPage> {
   final _formKey = GlobalKey<FormState>();
   final couponCodeController = TextEditingController();
   final discountController = TextEditingController();
+  final fixedAmountController = TextEditingController();
+
   final descriptionController = TextEditingController();
   final maxUsageController = TextEditingController();
   final minOrderController = TextEditingController();
-  bool showCreatedCoupons = false;
+
   DateTime? validFrom;
   DateTime? validTo;
+  final isDiscountEnabled = ValueNotifier<bool>(true);
+  final isFixedAmountEnabled = ValueNotifier<bool>(true);
+
+  @override
+  void initState() {
+    super.initState();
+
+    discountController.addListener(() {
+      final hasValue = discountController.text.trim().isNotEmpty;
+      isFixedAmountEnabled.value = !hasValue;
+    });
+
+    fixedAmountController.addListener(() {
+      final hasValue = fixedAmountController.text.trim().isNotEmpty;
+      isDiscountEnabled.value = !hasValue;
+    });
+  }
 
   Future<String> fetchShopName() async {
     final docA = await FirebaseFirestore.instance
@@ -68,9 +87,33 @@ class _ShopsCouponsPageState extends State<ShopsCouponsPage> {
 
   Future<void> saveCoupon(String shopName) async {
     final code = couponCodeController.text.trim();
+    final discountText = discountController.text.trim();
+    final fixedText = fixedAmountController.text.trim();
+
+    final isDiscountFilled = discountText.isNotEmpty;
+    final isFixedAmountFilled = fixedText.isNotEmpty;
+
+    if (isDiscountFilled && isFixedAmountFilled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text('Please enter only Discount or Fixed amount, not both.')),
+      );
+      return;
+    }
+
+    if (!isDiscountFilled && !isFixedAmountFilled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Please enter either Discount or Fixed amount.')),
+      );
+      return;
+    }
+
     final data = {
       'couponCode': code,
-      'discount': double.tryParse(discountController.text) ?? 0,
+      'discount': double.tryParse(discountText) ?? 0,
+      'fixedAmount': double.tryParse(fixedText) ?? 0,
       'description': descriptionController.text,
       'maxUsagePerUser': int.tryParse(maxUsageController.text) ?? 1,
       'minimumOrderValue': double.tryParse(minOrderController.text) ?? 0,
@@ -81,29 +124,43 @@ class _ShopsCouponsPageState extends State<ShopsCouponsPage> {
       'createdBy': shopName,
       'shopId': widget.shopId,
     };
-    await FirebaseFirestore.instance.collection('coupons').doc(code).set(data);
+
+    await FirebaseFirestore.instance
+        .collection('coupons_by_shops')
+        .doc(code)
+        .set(data);
 
     couponCodeController.clear();
     discountController.clear();
+    fixedAmountController.clear();
     descriptionController.clear();
     maxUsageController.clear();
     minOrderController.clear();
+
+    isDiscountEnabled.value = true;
+    isFixedAmountEnabled.value = true;
     setState(() {
       validFrom = null;
       validTo = null;
-      showCreatedCoupons = true;
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Coupon saved successfully!')),
+    );
   }
 
   Widget _buildTextField(String label,
       {required TextEditingController controller,
-      TextInputType? keyboardType}) {
+      TextInputType? keyboardType,
+      bool enabled = true,
+      String? Function(String?)? validator}) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
-        validator: (v) => v?.isEmpty == true ? 'Required' : null,
+        enabled: enabled,
+        validator: validator,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(),
@@ -133,9 +190,30 @@ class _ShopsCouponsPageState extends State<ShopsCouponsPage> {
                     SizedBox(height: 16),
                     _buildTextField('Coupon Code',
                         controller: couponCodeController),
-                    _buildTextField('Discount (%)',
-                        controller: discountController,
-                        keyboardType: TextInputType.number),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: isDiscountEnabled,
+                      builder: (context, value, _) {
+                        return _buildTextField(
+                          'Discount (%)',
+                          controller: discountController,
+                          keyboardType: TextInputType.number,
+                          enabled: value,
+                          validator: null, // <--- no individual validation
+                        );
+                      },
+                    ),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: isFixedAmountEnabled,
+                      builder: (context, value, _) {
+                        return _buildTextField(
+                          'Fixed amount',
+                          controller: fixedAmountController,
+                          keyboardType: TextInputType.number,
+                          enabled: value,
+                          validator: null, // <--- no individual validation
+                        );
+                      },
+                    ),
                     _buildTextField('Description',
                         controller: descriptionController),
                     _buildTextField('Max Usage per User',
@@ -173,14 +251,40 @@ class _ShopsCouponsPageState extends State<ShopsCouponsPage> {
                     SizedBox(height: 20),
                     ElevatedButton.icon(
                       onPressed: () {
+                        final discountText = discountController.text.trim();
+                        final fixedText = fixedAmountController.text.trim();
+
+                        final isDiscountFilled = discountText.isNotEmpty;
+                        final isFixedAmountFilled = fixedText.isNotEmpty;
+
+                        if (isDiscountFilled && isFixedAmountFilled) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    'Enter only Discount or Fixed amount, not both.')),
+                          );
+                          return;
+                        }
+
+                        if (!isDiscountFilled && !isFixedAmountFilled) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    'Enter either Discount or Fixed amount.')),
+                          );
+                          return;
+                        }
+
                         if (_formKey.currentState!.validate()) {
                           saveCoupon(shopName);
                         }
                       },
-                      icon: Icon(Icons.save),
-                      label: Text('Save Coupon'),
+                      icon: Icon(Icons.save, color: Colors.white),
+                      label: Text('Save Coupon',
+                          style: TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryColor,
+                        foregroundColor: Colors.white,
                         minimumSize: Size(double.infinity, 48),
                       ),
                     ),
@@ -196,108 +300,56 @@ class _ShopsCouponsPageState extends State<ShopsCouponsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
-      appBar: AppBar(
-        title:
-            Text('Coupons Management', style: TextStyle(color: Colors.white)),
-        backgroundColor: AppColors.secondaryColor,
-      ),
-      body: FutureBuilder<String>(
-        future: fetchShopName(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
-            return Center(child: CircularProgressIndicator());
-          if (snapshot.hasError)
-            return Center(child: Text('Error: ${snapshot.error}'));
-
-          final shopName = snapshot.data!;
-          return Column(
-            children: [
-              ToggleButtonsHeader(
-                selected: showCreatedCoupons,
-                onToggle: (val) => setState(() => showCreatedCoupons = val),
-              ),
-              Expanded(
-                child: showCreatedCoupons
-                    ? CreatedCouponsPage(shopId: widget.shopId)
-                    : _buildCreateForm(shopName),
-              )
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundColor,
+        appBar: AppBar(
+          title:
+              Text('Coupons Management', style: TextStyle(color: Colors.white)),
+          backgroundColor: AppColors.secondaryColor,
+          iconTheme: IconThemeData(color: Colors.white),
+          bottom: TabBar(
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: Colors.white,
+            tabs: [
+              Tab(text: 'Create Coupon'),
+              Tab(text: 'Created Coupons'),
             ],
-          );
-        },
+          ),
+        ),
+        body: FutureBuilder<String>(
+          future: fetchShopName(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+
+            final shopName = snapshot.data!;
+            return TabBarView(
+              children: [
+                _buildCreateForm(shopName),
+                CreatedShopsCouponsList(),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
-}
-
-class ToggleButtonsHeader extends StatelessWidget {
-  final bool selected;
-  final ValueChanged<bool> onToggle;
-
-  const ToggleButtonsHeader({
-    Key? key,
-    required this.selected,
-    required this.onToggle,
-  }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.green.shade100,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => onToggle(false),
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: !selected
-                      ? AppColors.backgroundColor
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    "Create Coupon",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: !selected ? Colors.black : Colors.black54,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => onToggle(true),
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color:
-                      selected ? AppColors.backgroundColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    "Created Coupons",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: selected ? Colors.black : Colors.black54,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  void dispose() {
+    couponCodeController.dispose();
+    discountController.dispose();
+    fixedAmountController.dispose();
+    descriptionController.dispose();
+    maxUsageController.dispose();
+    minOrderController.dispose();
+    super.dispose();
   }
 }

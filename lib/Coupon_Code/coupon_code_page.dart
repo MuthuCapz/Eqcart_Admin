@@ -14,6 +14,7 @@ class CouponCodeForm extends StatefulWidget {
 class _CouponCodeFormState extends State<CouponCodeForm> {
   final TextEditingController codeController = TextEditingController();
   final TextEditingController discountController = TextEditingController();
+  final TextEditingController fixedAmountController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController usageLimitController = TextEditingController();
   final TextEditingController minimumOrderController = TextEditingController();
@@ -23,6 +24,26 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
   CouponType selectedType = CouponType.common;
   List<String> selectedShopIds = [];
   List<Map<String, String>> availableShops = [];
+  bool isDiscountEnabled = true;
+  bool isFixedAmountEnabled = true;
+  @override
+  void initState() {
+    super.initState();
+
+    discountController.addListener(() {
+      final hasValue = discountController.text.trim().isNotEmpty;
+      setState(() {
+        isFixedAmountEnabled = !hasValue;
+      });
+    });
+
+    fixedAmountController.addListener(() {
+      final hasValue = fixedAmountController.text.trim().isNotEmpty;
+      setState(() {
+        isDiscountEnabled = !hasValue;
+      });
+    });
+  }
 
   InputDecoration inputDecoration(String label) => InputDecoration(
         labelText: label,
@@ -37,15 +58,24 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
 
   Future<void> submitCoupon() async {
     final code = codeController.text.trim();
-    final discount = double.tryParse(discountController.text.trim()) ?? 0.0;
+
     final description = descriptionController.text.trim();
     final maxUsage = int.tryParse(usageLimitController.text.trim()) ?? 1;
     final minOrderValue =
         double.tryParse(minimumOrderController.text.trim()) ?? 0.0;
+    final discountText = discountController.text.trim();
+    final fixedAmountText = fixedAmountController.text.trim();
+    final discount = double.tryParse(discountText) ?? 0.0;
+    final fixedAmount = double.tryParse(fixedAmountText) ?? 0.0;
 
-    if (code.isEmpty || discount <= 0 || description.isEmpty) {
+    if (code.isEmpty ||
+        description.isEmpty ||
+        (discount <= 0 && fixedAmount <= 0) ||
+        (discount > 0 && fixedAmount > 0)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields correctly.')),
+        const SnackBar(
+            content:
+                Text('Please fill either discount or fixed amount, not both.')),
       );
       return;
     }
@@ -67,6 +97,7 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
       code: code,
       description: description,
       discount: discount,
+      fixedAmount: fixedAmount > 0 ? fixedAmount : null,
       minimumOrderValue: minOrderValue,
       validFrom: validFrom!,
       validTo: validTo!,
@@ -89,6 +120,7 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
       // Clear form
       codeController.clear();
       discountController.clear();
+      fixedAmountController.clear();
       descriptionController.clear();
       minimumOrderController.clear();
       setState(() {
@@ -213,6 +245,13 @@ class _CouponCodeFormState extends State<CouponCodeForm> {
                           controller: discountController,
                           keyboardType: TextInputType.number,
                           decoration: inputDecoration('Discount (%)'),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: fixedAmountController,
+                          keyboardType: TextInputType.number,
+                          enabled: isFixedAmountEnabled,
+                          decoration: inputDecoration('Fixed Amount'),
                         ),
                         const SizedBox(height: 16),
                         TextField(

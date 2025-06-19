@@ -17,29 +17,81 @@ class ShopsCouponsEditPage extends StatefulWidget {
 }
 
 class _ShopsCouponsEditPage extends State<ShopsCouponsEditPage> {
-  late TextEditingController discountController;
-  late TextEditingController descriptionController;
-  late TextEditingController maxUsageController;
-  late TextEditingController minOrderController;
+  // Initialize controllers immediately instead of using late
+  final TextEditingController discountController = TextEditingController();
+  final TextEditingController fixedAmountController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController maxUsageController = TextEditingController();
+  final TextEditingController minOrderController = TextEditingController();
 
   DateTime? validFrom;
   DateTime? validTo;
+
+  final isDiscountEnabled = ValueNotifier<bool>(true);
+  final isFixedAmountEnabled = ValueNotifier<bool>(true);
 
   @override
   void initState() {
     super.initState();
 
-    discountController = TextEditingController(
-        text: widget.couponData['discount']?.toString() ?? '0');
-    descriptionController =
-        TextEditingController(text: widget.couponData['description'] ?? '');
-    maxUsageController = TextEditingController(
-        text: widget.couponData['maxUsagePerUser']?.toString() ?? '1');
-    minOrderController = TextEditingController(
-        text: widget.couponData['minimumOrderValue']?.toString() ?? '0');
+    // Assign values to controllers
+    discountController.text = widget.couponData['discount']?.toString() ?? '';
+    fixedAmountController.text =
+        widget.couponData['fixedAmount']?.toString() ?? '';
+    descriptionController.text = widget.couponData['description'] ?? '';
+    maxUsageController.text =
+        widget.couponData['maxUsagePerUser']?.toString() ?? '1';
+    minOrderController.text =
+        widget.couponData['minimumOrderValue']?.toString() ?? '0';
 
-    validFrom = (widget.couponData['validFrom'] as Timestamp?)?.toDate();
-    validTo = (widget.couponData['validTo'] as Timestamp?)?.toDate();
+    validFrom = _convertToDate(widget.couponData['validFrom']);
+    validTo = _convertToDate(widget.couponData['validTo']);
+
+    // Initialize enable state based on actual values (non-zero, non-empty)
+    final hasDiscount = _hasRealValue(discountController.text);
+    final hasFixedAmount = _hasRealValue(fixedAmountController.text);
+
+    isDiscountEnabled.value = !hasFixedAmount;
+    isFixedAmountEnabled.value = !hasDiscount;
+
+    // Add listeners
+    discountController.addListener(() {
+      final hasDiscount = _hasRealValue(discountController.text);
+      final hasFixed = _hasRealValue(fixedAmountController.text);
+
+      if (hasDiscount) {
+        fixedAmountController.clear();
+        isFixedAmountEnabled.value = false;
+      } else if (!hasFixed) {
+        isFixedAmountEnabled.value = true;
+      }
+    });
+
+    fixedAmountController.addListener(() {
+      final hasFixed = _hasRealValue(fixedAmountController.text);
+      final hasDiscount = _hasRealValue(discountController.text);
+
+      if (hasFixed) {
+        discountController.clear();
+        isDiscountEnabled.value = false;
+      } else if (!hasDiscount) {
+        isDiscountEnabled.value = true;
+      }
+    });
+  }
+
+  bool _hasRealValue(String? text) {
+    if (text == null) return false;
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return false;
+    final value = double.tryParse(trimmed);
+    return value != null && value != 0.0;
+  }
+
+  DateTime? _convertToDate(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 
   Future<void> selectValidDateRange(BuildContext context) async {
@@ -71,22 +123,47 @@ class _ShopsCouponsEditPage extends State<ShopsCouponsEditPage> {
   }
 
   Future<void> updateCoupon() async {
+    final discountText = discountController.text.trim();
+    final fixedText = fixedAmountController.text.trim();
+
+    final isDiscountFilled = discountText.isNotEmpty;
+    final isFixedFilled = fixedText.isNotEmpty;
+
+    if (isDiscountFilled && isFixedFilled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('Please enter only Discount or Fixed amount, not both.'),
+        ),
+      );
+      return;
+    }
+
+    if (!isDiscountFilled && !isFixedFilled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter either Discount or Fixed amount.'),
+        ),
+      );
+      return;
+    }
+
     final updatedFields = {
-      'discount': double.tryParse(discountController.text) ?? 0,
+      'discount': double.tryParse(discountText) ?? 0,
+      'fixedAmount': double.tryParse(fixedText) ?? 0,
       'description': descriptionController.text,
       'maxUsagePerUser': int.tryParse(maxUsageController.text) ?? 1,
       'minimumOrderValue': double.tryParse(minOrderController.text) ?? 0,
       'validFrom': validFrom,
       'validTo': validTo,
-      'updateDateTime': FieldValue.serverTimestamp(), // ✅ Add update time
-      'shopName': widget.couponData['shopName'], // ✅ Ensure shopName stays
+      'updateDateTime': FieldValue.serverTimestamp(),
+      'shopName': widget.couponData['shopName'],
     };
 
     await FirebaseFirestore.instance
-        .collection('coupons')
+        .collection('coupons_by_shops')
         .doc(widget.docId)
-        .set(updatedFields,
-            SetOptions(merge: true)); // ✅ Merge instead of overwrite
+        .set(updatedFields, SetOptions(merge: true));
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Coupon updated')),
@@ -127,7 +204,33 @@ class _ShopsCouponsEditPage extends State<ShopsCouponsEditPage> {
               ),
             ),
             SizedBox(height: 12),
-            _buildTextField('Discount (%)', controller: discountController),
+
+            // Discount field
+            ValueListenableBuilder<bool>(
+              valueListenable: isDiscountEnabled,
+              builder: (context, value, _) {
+                return _buildTextField(
+                  'Discount (%)',
+                  controller: discountController,
+                  enabled: value,
+                  keyboardType: TextInputType.number,
+                );
+              },
+            ),
+
+            // Fixed Amount field
+            ValueListenableBuilder<bool>(
+              valueListenable: isFixedAmountEnabled,
+              builder: (context, value, _) {
+                return _buildTextField(
+                  'Fixed Amount',
+                  controller: fixedAmountController,
+                  enabled: value,
+                  keyboardType: TextInputType.number,
+                );
+              },
+            ),
+
             _buildTextField('Description', controller: descriptionController),
             _buildTextField('Max Usage per User',
                 controller: maxUsageController,
@@ -168,19 +271,33 @@ class _ShopsCouponsEditPage extends State<ShopsCouponsEditPage> {
     );
   }
 
-  Widget _buildTextField(String label,
-      {required TextEditingController controller,
-      TextInputType? keyboardType}) {
+  Widget _buildTextField(
+    String label, {
+    required TextEditingController controller,
+    TextInputType? keyboardType,
+    bool enabled = true,
+  }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 8),
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        enabled: enabled,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    discountController.dispose();
+    fixedAmountController.dispose();
+    descriptionController.dispose();
+    maxUsageController.dispose();
+    minOrderController.dispose();
+    super.dispose();
   }
 }

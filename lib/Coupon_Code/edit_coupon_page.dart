@@ -16,6 +16,7 @@ class EditCouponPage extends StatefulWidget {
 class _EditCouponPageState extends State<EditCouponPage> {
   late TextEditingController codeController;
   late TextEditingController discountController;
+  late TextEditingController fixedAmountController;
   late TextEditingController descriptionController;
   late TextEditingController usageLimitController;
   late TextEditingController minimumOrderController;
@@ -31,8 +32,18 @@ class _EditCouponPageState extends State<EditCouponPage> {
     final coupon = widget.coupon;
 
     codeController = TextEditingController(text: coupon.code);
-    discountController =
-        TextEditingController(text: coupon.discount.toString());
+    if (coupon.fixedAmount != null && coupon.fixedAmount! > 0) {
+      fixedAmountController = TextEditingController(
+        text: coupon.fixedAmount!.toString(),
+      );
+      discountController = TextEditingController(text: '');
+    } else {
+      discountController = TextEditingController(
+        text: coupon.discount.toString(),
+      );
+      fixedAmountController = TextEditingController(text: '');
+    }
+
     descriptionController = TextEditingController(text: coupon.description);
     usageLimitController =
         TextEditingController(text: coupon.maxUsagePerUser.toString());
@@ -43,6 +54,8 @@ class _EditCouponPageState extends State<EditCouponPage> {
     validTo = coupon.validTo;
     selectedType = coupon.type;
     selectedShopIds = coupon.applicableShops.map((e) => e['id']!).toList();
+    discountController.addListener(() => setState(() {}));
+    fixedAmountController.addListener(() => setState(() {}));
 
     fetchShopsForType(selectedType);
   }
@@ -96,9 +109,17 @@ class _EditCouponPageState extends State<EditCouponPage> {
     final minimumOrderValue =
         double.tryParse(minimumOrderController.text.trim()) ?? 0.0;
 
-    if (code.isEmpty || discount <= 0 || description.isEmpty) {
+    final fixedAmount =
+        double.tryParse(fixedAmountController.text.trim()) ?? 0.0;
+
+    if (code.isEmpty ||
+        (discount <= 0 && fixedAmount <= 0) ||
+        (discount > 0 && fixedAmount > 0) ||
+        description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields correctly.')),
+        const SnackBar(
+            content: Text(
+                'Please fill either Discount or Fixed Amount (not both).')),
       );
       return;
     }
@@ -114,7 +135,8 @@ class _EditCouponPageState extends State<EditCouponPage> {
     final updatedCoupon = Coupon(
       code: code,
       description: description,
-      discount: discount,
+      discount: discount > 0 ? discount : 0,
+      fixedAmount: fixedAmount > 0 ? fixedAmount : null,
       type: selectedType,
       applicableShops: selectedType == CouponType.common ? [] : selectedShops,
       createdAt: widget.coupon.createdAt,
@@ -162,8 +184,18 @@ class _EditCouponPageState extends State<EditCouponPage> {
           children: [
             _buildSectionTitle('Coupon Details'),
             _buildTextField('Coupon Code', codeController, enabled: false),
-            _buildTextField('Discount (%)', discountController,
-                inputType: TextInputType.number),
+            _buildTextField(
+              'Discount (%)',
+              discountController,
+              inputType: TextInputType.number,
+              enabled: fixedAmountController.text.isEmpty,
+            ),
+            _buildTextField(
+              'Fixed Amount',
+              fixedAmountController,
+              inputType: TextInputType.number,
+              enabled: discountController.text.isEmpty,
+            ),
             _buildTextField('Description', descriptionController),
             _buildTextField('Max Usage per User', usageLimitController,
                 inputType: TextInputType.number),
@@ -339,6 +371,7 @@ class _EditCouponPageState extends State<EditCouponPage> {
   void dispose() {
     codeController.dispose();
     discountController.dispose();
+    fixedAmountController.dispose();
     descriptionController.dispose();
     usageLimitController.dispose();
     minimumOrderController.dispose();
